@@ -8,12 +8,15 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function Header({ onSearchPress, onMessagePress }) {
+export default function Header({ onSearchPress, onMessagePress, onAvatarPress }) {
   return (
     <View style={styles.header}>
       <View style={styles.headerContent}>
-        {/* Avatar */}
-        <TouchableOpacity style={styles.avatar}>
+        {/* Avatar - Opens Drawer */}
+        <TouchableOpacity 
+          style={styles.avatar}
+          onPress={onAvatarPress}
+        >
           <Image
             source={require('../../assets/logo.jpg')}
             style={styles.avatarImage}
