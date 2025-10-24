@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,11 +8,11 @@ import {
   Animated,
   Dimensions,
   TouchableWithoutFeedback,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native'; // 1. Import useNavigation
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native"; // 1. Import useNavigation
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 const DRAWER_WIDTH = 320;
 
 export default function CustomDrawer({ isOpen, onClose }) {
@@ -30,16 +30,20 @@ export default function CustomDrawer({ isOpen, onClose }) {
   // 3. Tạo hàm xử lý điều hướng
   const handleNavigateToProfile = () => {
     onClose(); // Đóng drawer
-    navigation.navigate('Profile'); // Điều hướng đến màn hình 'Profile'
+    navigation.navigate("Profile"); // Điều hướng đến màn hình 'Profile'
   };
 
   if (!isOpen) return null;
 
   const menuItems = [
-    { icon: 'bar-chart-outline', label: 'View all analytics', hasChevron: true },
-    { icon: 'game-controller-outline', label: 'Puzzle games' },
-    { icon: 'bookmark-outline', label: 'Saved posts' },
-    { icon: 'people-outline', label: 'Groups' },
+    {
+      icon: "bar-chart-outline",
+      label: "View all analytics",
+      hasChevron: true,
+    },
+    { icon: "game-controller-outline", label: "Puzzle games" },
+    { icon: "bookmark-outline", label: "Saved posts" },
+    { icon: "people-outline", label: "Groups" },
   ];
 
   return (
@@ -61,16 +65,16 @@ export default function CustomDrawer({ isOpen, onClose }) {
           {/* 4. Bọc Avatar bằng TouchableOpacity */}
           <TouchableOpacity onPress={handleNavigateToProfile}>
             <Image
-              source={require('../../../assets/logo.jpg')}
+              source={require("../../../assets/logo.jpg")}
               style={styles.avatar}
             />
           </TouchableOpacity>
-          
+
           {/* 5. (Tùy chọn) Bọc tên bằng TouchableOpacity */}
           <TouchableOpacity onPress={handleNavigateToProfile}>
             <Text style={styles.name}>Duy Hung Tran</Text>
           </TouchableOpacity>
-          
+
           <Text style={styles.jobTitle}>Software Engineer at FPT Software</Text>
           <Text style={styles.location}>Hanoi Capital Region</Text>
 
@@ -129,155 +133,155 @@ export default function CustomDrawer({ isOpen, onClose }) {
 
 // ... (Phần styles giữ nguyên như cũ)
 const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1000,
-  },
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  drawer: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: DRAWER_WIDTH,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    padding: 8,
-    zIndex: 10,
-  },
-  profileSection: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-    marginTop: 40,
-  },
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    marginBottom: 12,
-  },
-  name: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 4,
-  },
-  jobTitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 2,
-  },
-  location: {
-    fontSize: 14,
-    color: '#999',
-    marginBottom: 12,
-  },
-  companyBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  companyIcon: {
-    width: 24,
-    height: 24,
-    backgroundColor: '#0A66C2',
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  companyIconText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  companyName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#000',
-  },
-  profileViews: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  viewsText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  viewsNumber: {
-    color: '#0A66C2',
-    fontWeight: '600',
-  },
-  menuSection: {
-    flex: 1,
-    paddingVertical: 8,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  menuItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  menuItemText: {
-    fontSize: 16,
-    color: '#000',
-    marginLeft: 12,
-  },
-  bottomSection: {
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-  },
-  settingsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  settingsText: {
-    fontSize: 16,
-    color: '#000',
-    marginLeft: 12,
-  },
-  premiumContainer: {
-    padding: 16,
-  },
-  premiumButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFD93D',
-    borderRadius: 24,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  premiumText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-    marginLeft: 8,
-  },
+  container: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  drawer: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: DRAWER_WIDTH,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  closeButton: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    padding: 8,
+    zIndex: 10,
+  },
+  profileSection: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+    marginTop: 40,
+  },
+  avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    marginBottom: 12,
+  },
+  name: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#000",
+    marginBottom: 4,
+  },
+  jobTitle: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 2,
+  },
+  location: {
+    fontSize: 14,
+    color: "#999",
+    marginBottom: 12,
+  },
+  companyBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  companyIcon: {
+    width: 24,
+    height: 24,
+    backgroundColor: "#0A66C2",
+    borderRadius: 4,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
+  },
+  companyIconText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  companyName: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#000",
+  },
+  profileViews: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+  },
+  viewsText: {
+    fontSize: 14,
+    color: "#666",
+  },
+  viewsNumber: {
+    color: "#0A66C2",
+    fontWeight: "600",
+  },
+  menuSection: {
+    flex: 1,
+    paddingVertical: 8,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  menuItemLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  menuItemText: {
+    fontSize: 16,
+    color: "#000",
+    marginLeft: 12,
+  },
+  bottomSection: {
+    borderTopWidth: 1,
+    borderTopColor: "#E0E0E0",
+  },
+  settingsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  settingsText: {
+    fontSize: 16,
+    color: "#000",
+    marginLeft: 12,
+  },
+  premiumContainer: {
+    padding: 16,
+  },
+  premiumButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFD93D",
+    borderRadius: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  premiumText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#000",
+    marginLeft: 8,
+  },
 });
