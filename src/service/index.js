@@ -1,21 +1,24 @@
 // services/index.js
 import api from "./api";
 
-// ---- REGISTER ----
+// ---- AUTHENTICATION ----
 export const registerUser = async (data) => {
-  const res = await api.post("/users/register", data);
+  const res = await api.post("/auth/register", data);
   return res.data;
 };
 
-// ---- LOGIN ----
 export const loginUser = async (data) => {
-  const res = await api.post("/users/login", data);
+  const res = await api.post("/auth/login", data);
   return res.data;
 };
 
-// ---- GET PROFILE ----
 export const getProfile = async () => {
-  const res = await api.get("/users/profile");
+  const res = await api.get("/auth/profile");
+  return res.data;
+};
+
+export const logoutUser = async () => {
+  const res = await api.post("/auth/logout");
   return res.data;
 };
 
@@ -24,51 +27,49 @@ export const forgotPassword = async (data) => {
   const res = await api.post("/users/forgot-password", data);
   return res.data;
 };
-// =========================
-// 💬 CHAT SYSTEM (Conversation + Message)
-// =========================
 
-// ---- Tạo hoặc lấy lại hội thoại giữa 2 người ----
-export const createOrGetConversation = async (senderId, receiverId) => {
-  const res = await api.post("/conversations", { senderId, receiverId });
+// ---- POSTS ----
+export const createPost = async (data) => {
+  const res = await api.post("/posts", data);
   return res.data;
 };
 
-// ---- Lấy danh sách hội thoại của 1 user ----
-export const getConversations = async (userId) => {
-  try {
-    const res = await api.get(`/conversations/${userId}`);
-    console.log("✅ [Frontend] Data:", res.data);
-    return res.data;
-  } catch (error) {
-    console.log(
-      "❌ [Frontend] API error:",
-      error.response?.data || error.message
-    );
-    throw error;
-  }
-};
-
-// ---- Xóa hội thoại ----
-export const deleteConversation = async (conversationId) => {
-  const res = await api.delete(`/conversations/${conversationId}`);
+export const getPosts = async (page = 1, limit = 10) => {
+  const res = await api.get(`/posts?page=${page}&limit=${limit}`);
   return res.data;
 };
 
-// ---- Lấy tất cả tin nhắn trong 1 cuộc hội thoại ----
-export const getMessages = async (conversationId) => {
-  const res = await api.get(`/messages/${conversationId}`);
+export const getPostById = async (postId) => {
+  const res = await api.get(`/posts/${postId}`);
   return res.data;
 };
 
-// ---- Gửi tin nhắn mới ----
-export const sendMessage = async (conversationId, senderId, text) => {
-  const res = await api.post("/messages", { conversationId, senderId, text });
+export const updatePost = async (postId, data) => {
+  const res = await api.put(`/posts/${postId}`, data);
   return res.data;
 };
 
-// ---- Đánh dấu tin nhắn là đã đọc ----
-export const markMessagesAsRead = async (conversationId, userId) => {
-  const res = await api.put("/messages/read", { conversationId, userId });
+export const deletePost = async (postId) => {
+  const res = await api.delete(`/posts/${postId}`);
+  return res.data;
+};
+
+export const likePost = async (postId) => {
+  const res = await api.post(`/posts/${postId}/like`);
+  return res.data;
+};
+
+export const unlikePost = async (postId) => {
+  const res = await api.delete(`/posts/${postId}/like`);
+  return res.data;
+};
+
+export const commentPost = async (postId, data) => {
+  const res = await api.post(`/posts/${postId}/comments`, data);
+  return res.data;
+};
+
+export const getComments = async (postId) => {
+  const res = await api.get(`/posts/${postId}/comments`);
   return res.data;
 };
