@@ -8,18 +8,19 @@ export const AuthProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null); // 👈 thêm user
   const [loading, setLoading] = useState(true);
-
+  useEffect(() => {
+    console.log("🧠 AuthContext user thay đổi:", user);
+  }, [user]);
   // ✅ kiểm tra token khi mở app
   useEffect(() => {
     const checkLoginStatus = async () => {
       const token = await AsyncStorage.getItem("userToken");
       if (token) {
         setIsLoggedIn(true);
-
         // gọi API profile để lấy thông tin user
         try {
           const profile = await getProfile(); // API phải trả về user info
-          setUser(profile);
+          setUser(profile.user || profile);
         } catch (err) {
           console.log("❌ Lỗi load profile:", err.message);
         }
@@ -35,7 +36,10 @@ export const AuthProvider = ({ children }) => {
       const res = await loginUser({ email, password });
       await AsyncStorage.setItem("userToken", res.token);
       setIsLoggedIn(true);
-      setUser(res.user); // 👈 lưu thông tin user vào context
+
+      // gọi API lấy user chi tiết
+      const profile = await getProfile();
+      setUser(profile.user || profile);
       return true;
     } catch (err) {
       console.log("Login error:", err.response?.data || err.message);
