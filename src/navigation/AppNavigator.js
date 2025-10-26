@@ -4,13 +4,14 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { AuthContext } from "../context/AuthContext";
-
 import HomeScreen from "../screens/HomeScreen";
 import SearchScreen from "../screens/SearchScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
+import MessagesScreen from "../screens/MessagesScreen";
+import ChatDetailScreen from "../screens/ChatDetailScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -44,6 +45,18 @@ function MainTabs() {
   );
 }
 
+// ✅ Stack chính khi đã đăng nhập
+function AppStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen name="Messages" component={MessagesScreen} />
+      <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// ✅ Stack đăng nhập / đăng ký
 function AuthStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -60,7 +73,7 @@ export default function AppNavigator() {
 
   return (
     <NavigationContainer>
-      {isLoggedIn ? <MainTabs /> : <AuthStack />}
+      {isLoggedIn ? <AppStack /> : <AuthStack />}
     </NavigationContainer>
   );
 }
