@@ -79,7 +79,7 @@ export default function HomeScreen({ navigation }) {
   };
 
   const handleMessagePress = () => {
-    console.log('Message pressed');
+    navigation.navigate("Messages");
   };
 
   const handleAvatarPress = () => {
