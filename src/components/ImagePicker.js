@@ -1,100 +1,255 @@
+// components/ImagePicker.js
 import React from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
+  Image,
   StyleSheet,
   Alert,
-  Image,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePickerExpo from 'expo-image-picker';
 
-export default function ImagePicker({ selectedImage, onImageSelect, onImageRemove }) {
-  const handleImagePicker = () => {
+export default function ImagePicker({ 
+  selectedImage, 
+  onImageSelect, 
+  onImageRemove,
+  isUploading 
+}) {
+  
+  // Xin quyền truy cập camera
+  const requestCameraPermission = async () => {
+    const { status } = await ImagePickerExpo.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Quyền truy cập',
+        'Ứng dụng cần quyền truy cập camera để chụp ảnh!'
+      );
+      return false;
+    }
+    return true;
+  };
+
+  // Xin quyền truy cập thư viện ảnh
+  const requestMediaLibraryPermission = async () => {
+    const { status } = await ImagePickerExpo.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Quyền truy cập',
+        'Ứng dụng cần quyền truy cập thư viện ảnh!'
+      );
+      return false;
+    }
+    return true;
+  };
+
+  // Chụp ảnh từ camera
+  const takePhoto = async () => {
+    try {
+      const hasPermission = await requestCameraPermission();
+      if (!hasPermission) return;
+
+      const result = await ImagePickerExpo.launchCameraAsync({
+        mediaTypes: ImagePickerExpo.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        onImageSelect(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Lỗi khi chụp ảnh:', error);
+      Alert.alert('Lỗi', 'Không thể chụp ảnh. Vui lòng thử lại!');
+    }
+  };
+
+  // Chọn ảnh từ thư viện
+  const pickImage = async () => {
+    try {
+      const hasPermission = await requestMediaLibraryPermission();
+      if (!hasPermission) return;
+
+      const result = await ImagePickerExpo.launchImageLibraryAsync({
+        mediaTypes: ImagePickerExpo.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        onImageSelect(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Lỗi khi chọn ảnh:', error);
+      Alert.alert('Lỗi', 'Không thể chọn ảnh. Vui lòng thử lại!');
+    }
+  };
+
+  // Hiển thị tùy chọn chọn ảnh
+  const showImageOptions = () => {
     Alert.alert(
       'Chọn ảnh',
-      'Bạn muốn chọn ảnh từ đâu?',
+      'Bạn muốn lấy ảnh từ đâu?',
       [
         {
-          text: 'Camera',
-          onPress: () => {
-            // TODO: Implement camera capture
-            Alert.alert('Camera', 'Tính năng chụp ảnh sẽ được thêm sau');
-          },
+          text: 'Chụp ảnh',
+          onPress: takePhoto,
         },
         {
-          text: 'Thư viện ảnh',
-          onPress: () => {
-            // TODO: Implement image library picker
-            // Tạm thời sử dụng ảnh mẫu
-            const sampleImage = 'https://picsum.photos/400/300';
-            onImageSelect(sampleImage);
-          },
+          text: 'Chọn từ thư viện',
+          onPress: pickImage,
         },
         {
           text: 'Hủy',
           style: 'cancel',
         },
-      ]
+      ],
+      { cancelable: true }
     );
   };
 
-  if (selectedImage) {
-    return (
-      <View style={styles.imageContainer}>
-        <Image source={{ uri: selectedImage }} style={styles.selectedImage} />
-        <TouchableOpacity style={styles.removeButton} onPress={onImageRemove}>
-          <Ionicons name="close-circle" size={24} color="#EF4444" />
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
   return (
-    <TouchableOpacity style={styles.pickerButton} onPress={handleImagePicker}>
-      <Ionicons name="image-outline" size={24} color="#0A66C2" />
-      <Text style={styles.pickerText}>Thêm ảnh</Text>
-    </TouchableOpacity>
+    <View style={styles.container}>
+      {selectedImage ? (
+        <View style={styles.imageContainer}>
+          <Image source={{ uri: selectedImage }} style={styles.image} />
+          
+          {isUploading && (
+            <View style={styles.uploadingOverlay}>
+              <ActivityIndicator size="large" color="#fff" />
+              <Text style={styles.uploadingText}>Đang tải lên...</Text>
+            </View>
+          )}
+
+          {!isUploading && (
+            <TouchableOpacity
+              style={styles.removeButton}
+              onPress={onImageRemove}
+            >
+              <Ionicons name="close-circle" size={32} color="#EF4444" />
+            </TouchableOpacity>
+          )}
+
+          {!isUploading && (
+            <TouchableOpacity
+              style={styles.changeButton}
+              onPress={showImageOptions}
+            >
+              <Ionicons name="camera" size={20} color="#fff" />
+              <Text style={styles.changeButtonText}>Đổi ảnh</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      ) : (
+        <TouchableOpacity
+          style={styles.placeholderContainer}
+          onPress={showImageOptions}
+          disabled={isUploading}
+        >
+          <View style={styles.iconContainer}>
+            <Ionicons name="camera-outline" size={48} color="#9CA3AF" />
+          </View>
+          <Text style={styles.placeholderText}>Thêm ảnh</Text>
+          <Text style={styles.placeholderSubText}>
+            Chụp ảnh hoặc chọn từ thư viện
+          </Text>
+        </TouchableOpacity>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+  },
   imageContainer: {
     position: 'relative',
-    margin: 16,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  selectedImage: {
     width: '100%',
-    height: 200,
+    aspectRatio: 4 / 3,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#F3F4F6',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
     resizeMode: 'cover',
+  },
+  uploadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  uploadingText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 12,
   },
   removeButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 12,
+    right: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 12,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
   },
-  pickerButton: {
+  changeButton: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    margin: 16,
-    padding: 16,
-    backgroundColor: '#F3F2EF',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderStyle: 'dashed',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
   },
-  pickerText: {
-    marginLeft: 8,
+  changeButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  placeholderContainer: {
+    width: '100%',
+    aspectRatio: 4 / 3,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: '#D1D5DB',
+    backgroundColor: '#F9FAFB',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#E5E7EB',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  placeholderText: {
     fontSize: 16,
-    color: '#0A66C2',
-    fontWeight: '500',
+    fontWeight: '600',
+    color: '#374151',
+    marginTop: 8,
+  },
+  placeholderSubText: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    marginTop: 4,
   },
 });
-
