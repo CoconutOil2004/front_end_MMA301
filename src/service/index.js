@@ -2,17 +2,19 @@
 import api from "./api";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// ---- AUTHENTICATION ----
+// ---- REGISTER ----
 export const registerUser = async (data) => {
   const res = await api.post("/users/register", data);
   return res.data;
 };
 
+// ---- LOGIN ----
 export const loginUser = async (data) => {
   const res = await api.post("/users/login", data);
   return res.data;
 };
 
+// ---- GET PROFILE ----
 export const getProfile = async () => {
   const res = await api.get("/users/profile"); // ✅ Fixed: removed 'data' param
   return res.data;
@@ -28,10 +30,13 @@ export const forgotPassword = async (data) => {
   const res = await api.post("/users/forgot-password", data);
   return res.data;
 };
+// =========================
+// 💬 CHAT SYSTEM (Conversation + Message)
+// =========================
 
-// ---- POSTS ----
-export const createPost = async (data) => {
-  const res = await api.post("/posts", data);
+// ---- Tạo hoặc lấy lại hội thoại giữa 2 người ----
+export const createOrGetConversation = async (senderId, receiverId) => {
+  const res = await api.post("/conversations", { senderId, receiverId });
   return res.data;
 };
 
@@ -61,22 +66,26 @@ export const deletePost = async (postId) => {
   return res.data;
 };
 
-export const likePost = async (postId) => {
-  const res = await api.post(`/posts/${postId}/like`);
+// ---- Xóa hội thoại ----
+export const deleteConversation = async (conversationId) => {
+  const res = await api.delete(`/conversations/${conversationId}`);
   return res.data;
 };
 
-export const unlikePost = async (postId) => {
-  const res = await api.delete(`/posts/${postId}/like`);
+// ---- Lấy tất cả tin nhắn trong 1 cuộc hội thoại ----
+export const getMessages = async (conversationId) => {
+  const res = await api.get(`/messages/${conversationId}`);
   return res.data;
 };
 
-export const commentPost = async (postId, data) => {
-  const res = await api.post(`/posts/${postId}/comments`, data);
+// ---- Gửi tin nhắn mới ----
+export const sendMessage = async (conversationId, senderId, text) => {
+  const res = await api.post("/messages", { conversationId, senderId, text });
   return res.data;
 };
 
-export const getComments = async (postId) => {
-  const res = await api.get(`/posts/${postId}/comments`);
+// ---- Đánh dấu tin nhắn là đã đọc ----
+export const markMessagesAsRead = async (conversationId, userId) => {
+  const res = await api.put("/messages/read", { conversationId, userId });
   return res.data;
 };
