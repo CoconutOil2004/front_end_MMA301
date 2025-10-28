@@ -1,25 +1,26 @@
 // services/index.js
 import api from "./api";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ---- AUTHENTICATION ----
 export const registerUser = async (data) => {
-  const res = await api.post("/auth/register", data);
+  const res = await api.post("/users/register", data);
   return res.data;
 };
 
 export const loginUser = async (data) => {
-  const res = await api.post("/auth/login", data);
+  const res = await api.post("/users/login", data);
   return res.data;
 };
 
 export const getProfile = async () => {
-  const res = await api.get("/auth/profile");
+  const res = await api.get("/users/profile"); // ✅ Fixed: removed 'data' param
   return res.data;
 };
 
 export const logoutUser = async () => {
-  const res = await api.post("/auth/logout");
-  return res.data;
+  await AsyncStorage.removeItem("userToken");
+  return { message: "Logged out successfully" };
 };
 
 // ---- FORGOT PASSWORD ----
@@ -36,6 +37,12 @@ export const createPost = async (data) => {
 
 export const getPosts = async (page = 1, limit = 10) => {
   const res = await api.get(`/posts?page=${page}&limit=${limit}`);
+  return res.data;
+};
+
+// ✅ New: Get all posts without pagination
+export const getAllPosts = async () => {
+  const res = await api.get("/posts/all"); // hoặc set limit rất lớn
   return res.data;
 };
 

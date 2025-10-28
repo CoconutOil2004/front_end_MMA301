@@ -12,7 +12,7 @@ export const LIGHT_THEME = {
     activeText: "#111827", // chữ nổi bật
     secondary: "#FDBA74", // màu phụ, dùng cho icon / nhấn nhẹ
   },
-};
+};  
 export const DARK_THEME = {
   colors: {
     background: "#1E1B4B", // tím than đậm (ấm, tránh thuần đen)
