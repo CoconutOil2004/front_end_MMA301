@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { ScrollView, StyleSheet, SafeAreaView, View, RefreshControl, ActivityIndicator, Text } from 'react-native';
+import { ScrollView, StyleSheet, SafeAreaView, View, RefreshControl, ActivityIndicator, Text, TextInput } from 'react-native';
 import Header from '../components/Header';
 import PostCard from '../components/PostCard';
 import CustomDrawer from '../components/navigation/DrawerContent';
 import { getPosts } from '../service';
+import { Ionicons } from '@expo/vector-icons'; // 
 
 export default function HomeScreen({ navigation }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -14,21 +15,24 @@ export default function HomeScreen({ navigation }) {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
+  // 🔍 Added Search Bar
+  const [searchQuery, setSearchQuery] = useState('');
+
   // Transform MongoDB post to PostCard format
   const transformPost = (post) => {
     return {
       id: post._id,
-      avatar: post.userId?.avatar || 'https://via.placeholder.com/50', // User avatar
-      name: post.userId?.name || 'Anonymous User', // User name
-      degree: null, // You can add this to user profile later
-      title: post.title || '', // Post title
-      timeAgo: getTimeAgo(post.createdAt), // Calculate time ago
+      avatar: post.userId?.avatar || 'https://via.placeholder.com/50',
+      name: post.userId?.name || 'Anonymous User',
+      degree: null,
+      title: post.title || '',
+      timeAgo: getTimeAgo(post.createdAt),
       isEdited: post.createdAt !== post.updatedAt,
-      content: post.description || '', // Post description
-      showTranslation: false, // You can add language detection later
-      image: post.imageUrl || null, // Post image
-      hasHD: false, // Optional feature
-      isFollowing: false, // You can implement follow feature later
+      content: post.description || '',
+      showTranslation: false,
+      image: post.imageUrl || null,
+      hasHD: false,
+      isFollowing: false,
       likes: post.likes || [],
       tags: post.tags || [],
       status: post.status || 'open',
@@ -62,9 +66,8 @@ export default function HomeScreen({ navigation }) {
       setError(null);
       
       const response = await getPosts(pageNum, 20);
-      console.log('API Response:', response); // Debug log
+      console.log('API Response:', response);
       
-      // Handle different response structures
       let newPosts = [];
       if (Array.isArray(response)) {
         newPosts = response;
@@ -77,7 +80,6 @@ export default function HomeScreen({ navigation }) {
         newPosts = [];
       }
 
-      // Transform posts to match PostCard format
       const transformedPosts = newPosts.map(transformPost);
       
       if (append) {
@@ -86,14 +88,12 @@ export default function HomeScreen({ navigation }) {
         setPosts(transformedPosts);
       }
       
-      // Check if there are more posts to load
       setHasMore(newPosts.length === 20);
       
     } catch (error) {
       console.error('Error loading posts:', error);
       setError(error.message || 'Không thể tải bài viết');
       
-      // Show mock data only on first load
       if (!append && posts.length === 0) {
         setPosts([
           {
@@ -118,7 +118,6 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
-  // Load posts when component mounts
   useEffect(() => {
     loadPosts();
   }, []);
@@ -139,14 +138,12 @@ export default function HomeScreen({ navigation }) {
     setIsDrawerOpen(false);
   };
 
-  // Pull to refresh
   const onRefresh = async () => {
     setRefreshing(true);
     setPage(1);
     await loadPosts(1, false);
   };
 
-  // Load more posts when scrolling to bottom
   const handleLoadMore = () => {
     if (!loading && hasMore) {
       const nextPage = page + 1;
@@ -155,7 +152,15 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
-  // Render loading state
+  // 🔍 Added Search Bar — lọc danh sách bài đăng theo từ khóa
+  const filteredPosts = posts.filter((post) => {
+    const keyword = searchQuery.toLowerCase();
+    return (
+      post.title?.toLowerCase().includes(keyword) ||
+      post.content?.toLowerCase().includes(keyword)
+    );
+  });
+
   if (loading && posts.length === 0) {
     return (
       <View style={styles.container}>
@@ -183,6 +188,18 @@ export default function HomeScreen({ navigation }) {
           onAvatarPress={handleAvatarPress}
         />
 
+        {/* 🔍 Added Search Bar UI */}
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#9CA3AF" style={{ marginRight: 8 }} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Tìm bài đăng..."
+            placeholderTextColor="#9CA3AF"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+
         <ScrollView 
           style={styles.content} 
           showsVerticalScrollIndicator={false}
@@ -205,14 +222,14 @@ export default function HomeScreen({ navigation }) {
             </View>
           )}
 
-          {posts.length === 0 && !loading && (
+          {filteredPosts.length === 0 && !loading && !error && (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Chưa có bài viết nào</Text>
-              <Text style={styles.emptySubText}>Kéo xuống để làm mới</Text>
+              <Text style={styles.emptyText}>Không tìm thấy bài viết phù hợp</Text>
+              <Text style={styles.emptySubText}>Thử từ khóa khác nhé!</Text>
             </View>
           )}
 
-          {posts.map((post) => (
+          {filteredPosts.map((post) => (
             <PostCard key={post.id} post={post} />
           ))}
 
@@ -309,5 +326,22 @@ const styles = StyleSheet.create({
   endMessageText: {
     fontSize: 14,
     color: '#999',
+  },
+  // 🔍 Added Search Bar styles
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+    fontSize: 16,
+    color: '#111827',
   },
 });

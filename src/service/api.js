@@ -6,9 +6,9 @@ import { Platform } from "react-native";
 // 🔧 CÁC IP BẠN HAY DÙNG (thêm/bớt tùy ý)
 const IP_CONFIGS = {
   SCHOOL: "10.33.6.13",      // Mạng trường
-  HOME: "192.168.1.184",     // Mạng nhà
+  HOME: "192.168.0.111",     // Mạng nhà
   HOTSPOT: "172.20.10.2",
-  KHANHHOME:"192.168.1.22"  // iPhone hotspot
+  KHANHHOME:"192.168.0.111"  // iPhone hotspot
 };
 //VÍ DỤ : MUỐN ĐỔI IP THÌ THÊM IP VÀO ĐÂY
 
