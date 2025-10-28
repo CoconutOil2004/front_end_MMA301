@@ -1,6 +1,6 @@
 // services/index.js
 import api from "./api";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // ---- REGISTER ----
 export const registerUser = async (data) => {
@@ -40,6 +40,11 @@ export const createOrGetConversation = async (senderId, receiverId) => {
   return res.data;
 };
 
+export const createPost = async (data) => {
+  const res = await api.post("/posts", data);
+  return res.data;
+};
+
 export const getPosts = async (page = 1, limit = 10) => {
   const res = await api.get(`/posts?page=${page}&limit=${limit}`);
   return res.data;
@@ -69,6 +74,11 @@ export const deletePost = async (postId) => {
 // ---- Xóa hội thoại ----
 export const deleteConversation = async (conversationId) => {
   const res = await api.delete(`/conversations/${conversationId}`);
+  return res.data;
+};
+
+export const getConversations = async (userId) => {
+  const res = await api.get(`/conversations/${userId}`);
   return res.data;
 };
 
