@@ -28,8 +28,6 @@ function MainTabs() {
           let iconName;
           if (route.name === "Home")
             iconName = focused ? "home" : "home-outline";
-          else if (route.name === "Search")
-            iconName = focused ? "search" : "search-outline";
           else if (route.name === "CreatePost")
             iconName = focused ? "add-circle" : "add-circle-outline";
           else if (route.name === "Notifications")
@@ -44,7 +42,6 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Search" component={SearchScreen} />
       <Tab.Screen 
         name="CreatePost" 
         component={CreatePostScreen}

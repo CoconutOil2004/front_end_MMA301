@@ -1,5 +1,6 @@
 // services/index.js
 import api from "./api";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ---- REGISTER ----
 export const registerUser = async (data) => {
@@ -15,8 +16,13 @@ export const loginUser = async (data) => {
 
 // ---- GET PROFILE ----
 export const getProfile = async () => {
-  const res = await api.get("/users/profile");
+  const res = await api.get("/users/profile"); // ✅ Fixed: removed 'data' param
   return res.data;
+};
+
+export const logoutUser = async () => {
+  await AsyncStorage.removeItem("userToken");
+  return { message: "Logged out successfully" };
 };
 
 // ---- FORGOT PASSWORD ----
@@ -34,19 +40,30 @@ export const createOrGetConversation = async (senderId, receiverId) => {
   return res.data;
 };
 
-// ---- Lấy danh sách hội thoại của 1 user ----
-export const getConversations = async (userId) => {
-  try {
-    const res = await api.get(`/conversations/${userId}`);
-    console.log("✅ [Frontend] Data:", res.data);
-    return res.data;
-  } catch (error) {
-    console.log(
-      "❌ [Frontend] API error:",
-      error.response?.data || error.message
-    );
-    throw error;
-  }
+export const getPosts = async (page = 1, limit = 10) => {
+  const res = await api.get(`/posts?page=${page}&limit=${limit}`);
+  return res.data;
+};
+
+// ✅ New: Get all posts without pagination
+export const getAllPosts = async () => {
+  const res = await api.get("/posts/all"); // hoặc set limit rất lớn
+  return res.data;
+};
+
+export const getPostById = async (postId) => {
+  const res = await api.get(`/posts/${postId}`);
+  return res.data;
+};
+
+export const updatePost = async (postId, data) => {
+  const res = await api.put(`/posts/${postId}`, data);
+  return res.data;
+};
+
+export const deletePost = async (postId) => {
+  const res = await api.delete(`/posts/${postId}`);
+  return res.data;
 };
 
 // ---- Xóa hội thoại ----

@@ -9,19 +9,44 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 export default function PostCard({ post }) {
-  const {
-    avatar,
-    name,
-    degree,
-    title,
-    timeAgo,
-    isEdited,
-    content,
-    showTranslation,
-    image,
-    hasHD,
-    isFollowing,
-  } = post;
+  // Safely extract data with fallbacks
+  const avatar = post.avatar || post.userId?.avatar || 'https://via.placeholder.com/50';
+  const name = post.name || post.userId?.name || 'Anonymous User';
+  const degree = post.degree || null;
+  const title = post.title || '';
+  const timeAgo = post.timeAgo || 'now';
+  const isEdited = post.isEdited || false;
+  const content = post.content || post.description || '';
+  const showTranslation = post.showTranslation || false;
+  const image = post.image || post.imageUrl || null;
+  const hasHD = post.hasHD || false;
+  const isFollowing = post.isFollowing || false;
+  const likesCount = post.likes?.length || 0;
+  const status = post.status || 'open';
+  const contactPhone = post.contactPhone || '';
+
+  // Format post type display
+  const getPostTypeDisplay = () => {
+    const type = post.type || 'lost';
+    const typeMap = {
+      'lost': '🔍 Mất đồ',
+      'found': '✨ Nhặt được',
+      'other': '📌 Khác'
+    };
+    return typeMap[type] || typeMap['lost'];
+  };
+
+  // Format status badge
+  const getStatusBadge = () => {
+    if (status === 'closed') {
+      return (
+        <View style={styles.statusBadge}>
+          <Text style={styles.statusText}>✓ Đã giải quyết</Text>
+        </View>
+      );
+    }
+    return null;
+  };
 
   return (
     <View style={styles.postCard}>
@@ -36,9 +61,14 @@ export default function PostCard({ post }) {
             <Text style={styles.postName}>{name}</Text>
             {degree && <Text style={styles.postDegree}>· {degree}</Text>}
           </View>
-          <Text style={styles.postTitle} numberOfLines={1}>
-            {title}
-          </Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.postType}>{getPostTypeDisplay()}</Text>
+            {title && (
+              <Text style={styles.postTitle} numberOfLines={1}>
+                · {title}
+              </Text>
+            )}
+          </View>
           <View style={styles.postMeta}>
             <Text style={styles.postTime}>
               {timeAgo}
@@ -52,17 +82,28 @@ export default function PostCard({ post }) {
           {!isFollowing && (
             <TouchableOpacity style={styles.followButton}>
               <Ionicons name="add" size={18} color="#0A66C2" />
-              <Text style={styles.followText}>Follow</Text>
+              <Text style={styles.followText}>Contact</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity style={styles.moreButton}>
-            <Ionicons name="close" size={20} color="#666" />
+            <Ionicons name="ellipsis-horizontal" size={20} color="#666" />
           </TouchableOpacity>
         </View>
       </View>
 
+      {/* Status Badge */}
+      {getStatusBadge()}
+
       {/* Post Content */}
       <Text style={styles.postContent}>{content}</Text>
+
+      {/* Contact Info */}
+      {contactPhone && (
+        <View style={styles.contactInfo}>
+          <Ionicons name="call-outline" size={14} color="#0A66C2" />
+          <Text style={styles.contactPhone}>{contactPhone}</Text>
+        </View>
+      )}
 
       {/* Translation Button */}
       {showTranslation && (
@@ -90,8 +131,17 @@ export default function PostCard({ post }) {
       {/* Post Footer - Actions */}
       <View style={styles.postFooter}>
         <TouchableOpacity style={styles.footerButton}>
-          <Ionicons name="thumbs-up-outline" size={20} color="#666" />
-          <Text style={styles.footerButtonText}>Like</Text>
+          <Ionicons 
+            name={likesCount > 0 ? "thumbs-up" : "thumbs-up-outline"} 
+            size={20} 
+            color={likesCount > 0 ? "#0A66C2" : "#666"} 
+          />
+          <Text style={[
+            styles.footerButtonText,
+            likesCount > 0 && styles.footerButtonTextActive
+          ]}>
+            Like {likesCount > 0 && `(${likesCount})`}
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.footerButton}>
           <Ionicons name="chatbubble-outline" size={20} color="#666" />
@@ -147,10 +197,21 @@ const styles = StyleSheet.create({
     color: '#666',
     marginLeft: 4,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  postType: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0A66C2',
+  },
   postTitle: {
     fontSize: 12,
     color: '#666',
-    marginTop: 2,
+    marginLeft: 4,
+    flex: 1,
   },
   postMeta: {
     flexDirection: 'row',
@@ -178,11 +239,41 @@ const styles = StyleSheet.create({
   moreButton: {
     padding: 4,
   },
+  statusBadge: {
+    backgroundColor: '#D4EDDA',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#155724',
+  },
   postContent: {
     fontSize: 14,
     color: '#000',
     lineHeight: 20,
     marginBottom: 8,
+  },
+  contactInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F8FF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#B3D9FF',
+  },
+  contactPhone: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0A66C2',
+    marginLeft: 6,
   },
   translationButton: {
     alignSelf: 'flex-start',
@@ -201,7 +292,7 @@ const styles = StyleSheet.create({
   },
   postImage: {
     width: '100%',
-    height: 200,
+    height: 400,
     backgroundColor: '#E0E0E0',
   },
   hdBadge: {
@@ -233,5 +324,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginLeft: 4,
+  },
+  footerButtonTextActive: {
+    color: '#0A66C2',
+    fontWeight: '600',
   },
 });
