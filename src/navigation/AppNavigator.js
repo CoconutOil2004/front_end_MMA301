@@ -15,7 +15,7 @@ import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import MessagesScreen from "../screens/MessagesScreen";
 import ChatDetailScreen from "../screens/ChatDetailScreen";
-import SettingsScreen from "../screens/SettingsScreen"; // <-- 1. IMPORT SETTINGSSCREEN
+import SettingsScreen from "../screens/SettingsScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -65,12 +65,7 @@ function AppStack() {
       <Stack.Screen name="MainTabs" component={MainTabs} />
       <Stack.Screen name="Messages" component={MessagesScreen} />
       <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
-      
-      {/* 2. THÊM SETTINGSSCREEN TẠI ĐÂY */}
       <Stack.Screen name="Settings" component={SettingsScreen} />
-      
-      {/* Bạn cũng có thể đã có ProfileScreen ở đây, nếu vậy hãy giữ nó */}
-      {/* <Stack.Screen name="Profile" component={ProfileScreen} /> */}
     </Stack.Navigator>
   );
 }
@@ -88,7 +83,7 @@ function AuthStack() {
 export default function AppNavigator() {
   const { isLoggedIn, loading } = useContext(AuthContext);
 
-  if (loading) return null; // Hoặc hiển thị màn hình loading
+  if (loading) return null;
 
   return (
     <NavigationContainer>
