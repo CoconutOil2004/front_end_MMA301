@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import {
   View,
   StyleSheet,
@@ -7,8 +7,14 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { AuthContext } from '../context/AuthContext';
 
 export default function Header({ onSearchPress, onMessagePress, onAvatarPress }) {
+  const { user, avatarUrl } = useContext(AuthContext); // 👈 Lấy từ context
+
+  // ✅ Sử dụng avatarUrl từ context - tự động update khi thay đổi
+  const displayAvatar = avatarUrl || user?.avatar || require('../../assets/logo.jpg');
+
   return (
     <View style={styles.header}>
       <View style={styles.headerContent}>
@@ -18,7 +24,7 @@ export default function Header({ onSearchPress, onMessagePress, onAvatarPress })
           onPress={onAvatarPress}
         >
           <Image
-            source={require('../../assets/logo.jpg')}
+            source={typeof displayAvatar === 'string' ? { uri: displayAvatar } : displayAvatar}
             style={styles.avatarImage}
           />
         </TouchableOpacity>

@@ -8,7 +8,7 @@ const IP_CONFIGS = {
   SCHOOL: "10.33.6.13",      // Mạng trường
   HOME: "192.168.1.184",     // Mạng nhà
   HOTSPOT: "172.20.10.2",
-  KHANHHOME:"192.168.1.22"  // iPhone hotspot
+  KHANHHOME:"192.168.1.22",
 };
 //VÍ DỤ : MUỐN ĐỔI IP THÌ THÊM IP VÀO ĐÂY
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,21 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { AuthContext } from '../context/AuthContext'; // 👈 Import context
 
 export default function PostCard({ post }) {
+  const { user, avatarUrl } = useContext(AuthContext); // 👈 Lấy từ context
+
   // Safely extract data with fallbacks
-  const avatar = post.avatar || post.userId?.avatar || 'https://via.placeholder.com/50';
+  const postUserId = post.userId?._id || post.userId?.id || post.userId;
+  const currentUserId = user?._id || user?.id;
+  
+  // ✅ Nếu là post của user hiện tại, dùng avatarUrl từ context
+  const isCurrentUserPost = postUserId === currentUserId;
+  const avatar = isCurrentUserPost 
+    ? (avatarUrl || user?.avatar || 'https://via.placeholder.com/50')
+    : (post.avatar || post.userId?.avatar || 'https://via.placeholder.com/50');
+  
   const name = post.name || post.userId?.name || 'Anonymous User';
   const degree = post.degree || null;
   const title = post.title || '';
@@ -53,8 +64,9 @@ export default function PostCard({ post }) {
       {/* Post Header */}
       <View style={styles.postHeader}>
         <Image
-          source={{ uri: avatar }}
+          source={{ uri: avatar}}
           style={styles.postAvatar}
+          key={avatar} // 👈 Force re-render khi avatar thay đổi
         />
         <View style={styles.postInfo}>
           <View style={styles.postNameRow}>

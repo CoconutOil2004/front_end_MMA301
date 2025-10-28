@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { ScrollView, StyleSheet, SafeAreaView, View, RefreshControl, ActivityIndicator, Text } from 'react-native';
 import Header from '../components/Header';
 import PostCard from '../components/PostCard';
 import CustomDrawer from '../components/navigation/DrawerContent';
 import { getPosts } from '../service';
+import { AuthContext } from '../context/AuthContext'; // 👈 Import context
 
 export default function HomeScreen({ navigation }) {
+  const { user, avatarUrl } = useContext(AuthContext); // 👈 Lấy user và avatar từ context
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [posts, setPosts] = useState([]);
@@ -16,19 +18,27 @@ export default function HomeScreen({ navigation }) {
 
   // Transform MongoDB post to PostCard format
   const transformPost = (post) => {
+    const postUserId = post.userId?._id || post.userId?.id;
+    const currentUserId = user?._id || user?.id;
+    const isCurrentUserPost = postUserId === currentUserId;
+
     return {
       id: post._id,
-      avatar: post.userId?.avatar || 'https://via.placeholder.com/50', // User avatar
-      name: post.userId?.name || 'Anonymous User', // User name
-      degree: null, // You can add this to user profile later
-      title: post.title || '', // Post title
-      timeAgo: getTimeAgo(post.createdAt), // Calculate time ago
+      // ✅ Nếu là post của user hiện tại, dùng avatarUrl từ context
+      avatar: isCurrentUserPost 
+        ? (avatarUrl || user?.avatar || 'https://via.placeholder.com/50')
+        : (post.userId?.avatar || 'https://via.placeholder.com/50'),
+      name: post.userId?.name || 'Anonymous User',
+      userId: post.userId, // 👈 Thêm userId để PostCard có thể check
+      degree: null,
+      title: post.title || '',
+      timeAgo: getTimeAgo(post.createdAt),
       isEdited: post.createdAt !== post.updatedAt,
-      content: post.description || '', // Post description
-      showTranslation: false, // You can add language detection later
-      image: post.imageUrl || null, // Post image
-      hasHD: false, // Optional feature
-      isFollowing: false, // You can implement follow feature later
+      content: post.description || '',
+      showTranslation: false,
+      image: post.imageUrl || null,
+      hasHD: false,
+      isFollowing: false,
       likes: post.likes || [],
       tags: post.tags || [],
       status: post.status || 'open',
@@ -62,7 +72,7 @@ export default function HomeScreen({ navigation }) {
       setError(null);
       
       const response = await getPosts(pageNum, 20);
-      console.log('API Response:', response); // Debug log
+      console.log('API Response:', response);
       
       // Handle different response structures
       let newPosts = [];
@@ -122,6 +132,27 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => {
     loadPosts();
   }, []);
+
+  // ✅ Re-transform posts khi avatarUrl thay đổi
+  useEffect(() => {
+    if (posts.length > 0 && avatarUrl) {
+      setPosts(prevPosts => 
+        prevPosts.map(post => {
+          const postUserId = post.userId?._id || post.userId?.id;
+          const currentUserId = user?._id || user?.id;
+          const isCurrentUserPost = postUserId === currentUserId;
+          
+          if (isCurrentUserPost) {
+            return {
+              ...post,
+              avatar: avatarUrl
+            };
+          }
+          return post;
+        })
+      );
+    }
+  }, [avatarUrl]);
 
   const handleSearchPress = () => {
     navigation.navigate('Search');
