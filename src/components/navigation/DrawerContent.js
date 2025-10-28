@@ -10,14 +10,14 @@ import {
   TouchableWithoutFeedback,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native"; // 1. Import useNavigation
+import { useNavigation } from "@react-navigation/native";
 
 const { width } = Dimensions.get("window");
 const DRAWER_WIDTH = 320;
 
-export default function CustomDrawer({ isOpen, onClose }) {
+export default function DrawerContent({ isOpen, onClose }) {
   const translateX = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
-  const navigation = useNavigation(); // 2. Lấy đối tượng navigation
+  const navigation = useNavigation();
 
   useEffect(() => {
     Animated.timing(translateX, {
@@ -27,10 +27,15 @@ export default function CustomDrawer({ isOpen, onClose }) {
     }).start();
   }, [isOpen]);
 
-  // 3. Tạo hàm xử lý điều hướng
   const handleNavigateToProfile = () => {
+    onClose();
+    navigation.navigate("Profile");
+  };
+
+  // 1. Tạo hàm xử lý điều hướng cho Settings
+  const handleNavigateToSettings = () => {
     onClose(); // Đóng drawer
-    navigation.navigate("Profile"); // Điều hướng đến màn hình 'Profile'
+    navigation.navigate("Settings"); // Điều hướng đến màn hình 'Settings'
   };
 
   if (!isOpen) return null;
@@ -62,15 +67,14 @@ export default function CustomDrawer({ isOpen, onClose }) {
 
         {/* Profile Section */}
         <View style={styles.profileSection}>
-          {/* 4. Bọc Avatar bằng TouchableOpacity */}
           <TouchableOpacity onPress={handleNavigateToProfile}>
             <Image
+              // Giả sử bạn có logo.jpg trong assets, nếu không hãy thay đổi đường dẫn
               source={require("../../../assets/logo.jpg")}
               style={styles.avatar}
             />
           </TouchableOpacity>
 
-          {/* 5. (Tùy chọn) Bọc tên bằng TouchableOpacity */}
           <TouchableOpacity onPress={handleNavigateToProfile}>
             <Text style={styles.name}>Duy Hung Tran</Text>
           </TouchableOpacity>
@@ -99,7 +103,7 @@ export default function CustomDrawer({ isOpen, onClose }) {
             <TouchableOpacity
               key={index}
               style={styles.menuItem}
-              onPress={onClose} // Bạn có thể thay đổi hành động ở đây nếu muốn
+              onPress={onClose} // Giữ nguyên hoặc thay đổi nếu cần
             >
               <View style={styles.menuItemLeft}>
                 <Ionicons name={item.icon} size={22} color="#666" />
@@ -114,7 +118,11 @@ export default function CustomDrawer({ isOpen, onClose }) {
 
         {/* Settings */}
         <View style={styles.bottomSection}>
-          <TouchableOpacity style={styles.settingsButton} onPress={onClose}>
+          {/* 2. Cập nhật onPress cho nút Settings */}
+          <TouchableOpacity
+            style={styles.settingsButton}
+            onPress={handleNavigateToSettings}
+          >
             <Ionicons name="settings-outline" size={22} color="#666" />
             <Text style={styles.settingsText}>Settings</Text>
           </TouchableOpacity>
@@ -131,7 +139,7 @@ export default function CustomDrawer({ isOpen, onClose }) {
   );
 }
 
-// ... (Phần styles giữ nguyên như cũ)
+// ... (Styles giữ nguyên)
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
@@ -201,7 +209,7 @@ const styles = StyleSheet.create({
   companyIcon: {
     width: 24,
     height: 24,
-    backgroundColor: "#0A66C2",
+    backgroundColor: "#0A66C2", // LinkedIn blue
     borderRadius: 4,
     justifyContent: "center",
     alignItems: "center",
@@ -273,7 +281,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFD93D",
+    backgroundColor: "#FFD93D", // Màu vàng premium của LinkedIn
     borderRadius: 24,
     paddingVertical: 12,
     paddingHorizontal: 24,

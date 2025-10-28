@@ -51,9 +51,9 @@ export default function MessagesScreen({ navigation }) {
           })
         }
       >
-        <Image source={{ uri: otherUser.avatar }} style={styles.avatar} />
+        <Image source={{ uri: otherUser?.avatar }} style={styles.avatar} />
         <View style={styles.chatInfo}>
-          <Text style={styles.name}>{otherUser.name}</Text>
+          <Text style={styles.name}>{otherUser?.name}</Text>
           <Text style={styles.message} numberOfLines={1}>
             {item.lastMessage || "No messages yet"}
           </Text>

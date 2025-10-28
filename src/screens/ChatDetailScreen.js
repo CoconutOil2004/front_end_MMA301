@@ -62,7 +62,7 @@ export default function ChatDetailScreen({ route, navigation }) {
         ]}
       >
         {!isMe && (
-          <Image source={{ uri: receiver.avatar }} style={styles.avatarSmall} />
+          <Image source={{ uri: receiver?.avatar }} style={styles.avatarSmall} />
         )}
         <View
           style={[
@@ -93,8 +93,8 @@ export default function ChatDetailScreen({ route, navigation }) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#111" />
         </TouchableOpacity>
-        <Image source={{ uri: receiver.avatar }} style={styles.avatar} />
-        <Text style={styles.username}>{receiver.name}</Text>
+        <Image source={{ uri: receiver?.avatar }} style={styles.avatar} />
+        <Text style={styles.username}>{receiver?.name}</Text>
       </View>
 
       {/* Messages */}
