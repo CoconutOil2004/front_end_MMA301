@@ -7,8 +7,12 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from "../context/ThemeContext";
 
 export default function PostCard({ post }) {
+  const { theme } = useTheme(); // 2. Lấy theme
+  const styles = getStyles(theme.colors); // 3. Tạo styles động
+
   // Safely extract data with fallbacks
   const avatar = post.avatar || post.userId?.avatar || 'https://via.placeholder.com/50';
   const name = post.name || post.userId?.name || 'Anonymous User';
@@ -74,19 +78,19 @@ export default function PostCard({ post }) {
               {timeAgo}
               {isEdited && ' · Edited'} · 
             </Text>
-            <Ionicons name="earth" size={12} color="#666" />
+            <Ionicons name="earth" size={12} color={theme.colors.placeholder} />
           </View>
         </View>
-        
+
         <View style={styles.postActions}>
           {!isFollowing && (
             <TouchableOpacity style={styles.followButton}>
-              <Ionicons name="add" size={18} color="#0A66C2" />
+              <Ionicons name="add" size={18} color={theme.colors.primary} />
               <Text style={styles.followText}>Contact</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity style={styles.moreButton}>
-            <Ionicons name="ellipsis-horizontal" size={20} color="#666" />
+            <Ionicons name="ellipsis-horizontal" size={20} color={theme.colors.placeholder} />
           </TouchableOpacity>
         </View>
       </View>
@@ -100,7 +104,7 @@ export default function PostCard({ post }) {
       {/* Contact Info */}
       {contactPhone && (
         <View style={styles.contactInfo}>
-          <Ionicons name="call-outline" size={14} color="#0A66C2" />
+          <Ionicons name="call-outline" size={14} color={theme.colors.primary} />
           <Text style={styles.contactPhone}>{contactPhone}</Text>
         </View>
       )}
@@ -131,28 +135,29 @@ export default function PostCard({ post }) {
       {/* Post Footer - Actions */}
       <View style={styles.postFooter}>
         <TouchableOpacity style={styles.footerButton}>
-          <Ionicons 
-            name={likesCount > 0 ? "thumbs-up" : "thumbs-up-outline"} 
-            size={20} 
-            color={likesCount > 0 ? "#0A66C2" : "#666"} 
+          <Ionicons
+            name={likesCount > 0 ? "thumbs-up" : "thumbs-up-outline"}
+            size={20}
+            color={likesCount > 0 ? theme.colors.primary : theme.colors.placeholder}
           />
-          <Text style={[
-            styles.footerButtonText,
-            likesCount > 0 && styles.footerButtonTextActive
+          <Text
+            style={[
+              styles.footerButtonText,
+              likesCount > 0 && styles.footerButtonTextActive
           ]}>
             Like {likesCount > 0 && `(${likesCount})`}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.footerButton}>
-          <Ionicons name="chatbubble-outline" size={20} color="#666" />
+          <Ionicons name="chatbubble-outline" size={20} color={theme.colors.placeholder} />
           <Text style={styles.footerButtonText}>Comment</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.footerButton}>
-          <Ionicons name="arrow-redo-outline" size={20} color="#666" />
+          <Ionicons name="arrow-redo-outline" size={20} color={theme.colors.placeholder} />
           <Text style={styles.footerButtonText}>Share</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.footerButton}>
-          <Ionicons name="paper-plane-outline" size={20} color="#666" />
+          <Ionicons name="paper-plane-outline" size={20} color={theme.colors.placeholder} />
           <Text style={styles.footerButtonText}>Send</Text>
         </TouchableOpacity>
       </View>
@@ -160,173 +165,175 @@ export default function PostCard({ post }) {
   );
 }
 
-const styles = StyleSheet.create({
-  postCard: {
-    backgroundColor: '#fff',
-    marginTop: 8,
-    padding: 16,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  postHeader: {
+// 4. Hàm styles động
+const getStyles = (colors) =>
+  StyleSheet.create({
+    postCard: {
+      backgroundColor: colors.card,
+      marginTop: 8,
+      padding: 16,
+      borderTopWidth: 1,
+      borderBottomWidth: 1,
+      borderColor: colors.border,
+    },
+    postHeader: {
     flexDirection: 'row',
-    marginBottom: 12,
-  },
-  postAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#E0E0E0',
-  },
-  postInfo: {
-    flex: 1,
-    marginLeft: 8,
-  },
-  postNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  postName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-  },
-  postDegree: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 4,
-  },
-  titleRow: {
+      marginBottom: 12,
+    },
+    postAvatar: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: colors.inputBg,
+    },
+    postInfo: {
+      flex: 1,
+      marginLeft: 8,
+    },
+    postNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
-  },
-  postType: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#0A66C2',
-  },
-  postTitle: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 4,
-    flex: 1,
-  },
-  postMeta: {
+    },
+    postName: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    postDegree: {
+      fontSize: 12,
+      color: colors.placeholder,
+      marginLeft: 4,
+    },
+    titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
-  },
-  postTime: {
-    fontSize: 12,
-    color: '#666',
-  },
-  postActions: {
+      marginTop: 2,
+    },
+    postType: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    postTitle: {
+      fontSize: 12,
+      color: colors.placeholder,
+      marginLeft: 4,
+      flex: 1,
+    },
+    postMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+      marginTop: 4,
+    },
+    postTime: {
+      fontSize: 12,
+      color: colors.placeholder,
+    },
+    postActions: {
     alignItems: 'flex-end',
-  },
-  followButton: {
+    },
+    followButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-  },
-  followText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#0A66C2',
-    marginLeft: 4,
-  },
-  moreButton: {
-    padding: 4,
-  },
-  statusBadge: {
-    backgroundColor: '#D4EDDA',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+      marginBottom: 8,
+    },
+    followText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.primary,
+      marginLeft: 4,
+    },
+    moreButton: {
+      padding: 4,
+    },
+    statusBadge: {
+      backgroundColor: colors.success + "30", // Thêm độ mờ
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
     alignSelf: 'flex-start',
-    marginBottom: 8,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#155724',
-  },
-  postContent: {
-    fontSize: 14,
-    color: '#000',
-    lineHeight: 20,
-    marginBottom: 8,
-  },
-  contactInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F0F8FF',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#B3D9FF',
-  },
-  contactPhone: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#0A66C2',
-    marginLeft: 6,
-  },
-  translationButton: {
+      marginBottom: 8,
+    },
+    statusText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.success,
+    },
+    postContent: {
+      fontSize: 14,
+      color: colors.text,
+      lineHeight: 20,
+      marginBottom: 8,
+    },
+    contactInfo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.primary + "20", // Thêm độ mờ
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 8,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: colors.primary + "50",
+    },
+    contactPhone: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.primary,
+      marginLeft: 6,
+    },
+    translationButton: {
     alignSelf: 'flex-start',
-    marginBottom: 12,
-  },
-  translationText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-  },
-  postImageContainer: {
+      marginBottom: 12,
+    },
+    translationText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.placeholder,
+    },
+    postImageContainer: {
     position: 'relative',
-    borderRadius: 8,
+      borderRadius: 8,
     overflow: 'hidden',
-    marginBottom: 12,
-  },
-  postImage: {
+      marginBottom: 12,
+    },
+    postImage: {
     width: '100%',
-    height: 400,
-    backgroundColor: '#E0E0E0',
-  },
-  hdBadge: {
+      height: 400,
+      backgroundColor: colors.inputBg,
+    },
+    hdBadge: {
     position: 'absolute',
-    top: 8,
-    left: 8,
+      top: 8,
+      left: 8,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  hdText: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 4,
+    },
+    hdText: {
     color: '#fff',
-    fontSize: 12,
+      fontSize: 12,
     fontWeight: '600',
-  },
-  postFooter: {
+    },
+    postFooter: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-  },
-  footerButton: {
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    footerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  footerButtonText: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 4,
-  },
-  footerButtonTextActive: {
-    color: '#0A66C2',
-    fontWeight: '600',
-  },
-});
+    },
+    footerButtonText: {
+      fontSize: 14,
+      color: colors.placeholder,
+      marginLeft: 4,
+    },
+    footerButtonTextActive: {
+      color: colors.primary,
+      fontWeight: '600',
+    },
+  });
