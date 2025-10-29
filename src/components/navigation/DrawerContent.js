@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useContext } from "react";
 import {
   View,
   Text,
@@ -10,14 +10,17 @@ import {
   TouchableWithoutFeedback,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native"; // 1. Import useNavigation
+import { useNavigation } from "@react-navigation/native";
+import { AuthContext } from "../../context/AuthContext";
+import { DEFAULT_AVATAR } from "../../utils/constants"; // 👈 Import
 
 const { width } = Dimensions.get("window");
 const DRAWER_WIDTH = 320;
 
 export default function CustomDrawer({ isOpen, onClose }) {
   const translateX = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
-  const navigation = useNavigation(); // 2. Lấy đối tượng navigation
+  const navigation = useNavigation();
+  const { user, avatarUrl } = useContext(AuthContext);
 
   useEffect(() => {
     Animated.timing(translateX, {
@@ -27,13 +30,20 @@ export default function CustomDrawer({ isOpen, onClose }) {
     }).start();
   }, [isOpen]);
 
-  // 3. Tạo hàm xử lý điều hướng
   const handleNavigateToProfile = () => {
-    onClose(); // Đóng drawer
-    navigation.navigate("Profile"); // Điều hướng đến màn hình 'Profile'
+    onClose();
+    navigation.navigate("Profile");
   };
 
   if (!isOpen) return null;
+
+  // ✅ Dùng DEFAULT_AVATAR chung
+  const displayAvatar = avatarUrl || user?.avatar || DEFAULT_AVATAR;
+  const displayName = user?.name || "Người dùng";
+  const displayJobTitle = user?.headline || user?.jobTitle || "Software Engineer";
+  const displayLocation = user?.location || "Hanoi, Vietnam";
+  const displayCompany = user?.company || "FPT Software";
+  const displayCompanyInitial = displayCompany.charAt(0).toUpperCase();
 
   const menuItems = [
     {
@@ -48,58 +58,50 @@ export default function CustomDrawer({ isOpen, onClose }) {
 
   return (
     <View style={styles.container}>
-      {/* Overlay */}
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.overlay} />
       </TouchableWithoutFeedback>
 
-      {/* Drawer */}
       <Animated.View style={[styles.drawer, { transform: [{ translateX }] }]}>
-        {/* Close Button */}
         <TouchableOpacity style={styles.closeButton} onPress={onClose}>
           <Ionicons name="close" size={24} color="#666" />
         </TouchableOpacity>
 
-        {/* Profile Section */}
         <View style={styles.profileSection}>
-          {/* 4. Bọc Avatar bằng TouchableOpacity */}
           <TouchableOpacity onPress={handleNavigateToProfile}>
             <Image
-              source={require("../../../assets/logo.jpg")}
+              source={{ uri: displayAvatar }}
               style={styles.avatar}
             />
           </TouchableOpacity>
 
-          {/* 5. (Tùy chọn) Bọc tên bằng TouchableOpacity */}
           <TouchableOpacity onPress={handleNavigateToProfile}>
-            <Text style={styles.name}>Duy Hung Tran</Text>
+            <Text style={styles.name}>{displayName}</Text>
           </TouchableOpacity>
 
-          <Text style={styles.jobTitle}>Software Engineer at FPT Software</Text>
-          <Text style={styles.location}>Hanoi Capital Region</Text>
+          <Text style={styles.jobTitle}>{displayJobTitle}</Text>
+          <Text style={styles.location}>{displayLocation}</Text>
 
           <View style={styles.companyBadge}>
             <View style={styles.companyIcon}>
-              <Text style={styles.companyIconText}>F</Text>
+              <Text style={styles.companyIconText}>{displayCompanyInitial}</Text>
             </View>
-            <Text style={styles.companyName}>FPT Software</Text>
+            <Text style={styles.companyName}>{displayCompany}</Text>
           </View>
         </View>
 
-        {/* Profile Views */}
         <View style={styles.profileViews}>
           <Text style={styles.viewsText}>
-            <Text style={styles.viewsNumber}>13</Text> profile viewers
+            <Text style={styles.viewsNumber}>{user?.profileViews || 13}</Text> profile viewers
           </Text>
         </View>
 
-        {/* Menu Items */}
         <View style={styles.menuSection}>
           {menuItems.map((item, index) => (
             <TouchableOpacity
               key={index}
               style={styles.menuItem}
-              onPress={onClose} // Bạn có thể thay đổi hành động ở đây nếu muốn
+              onPress={onClose}
             >
               <View style={styles.menuItemLeft}>
                 <Ionicons name={item.icon} size={22} color="#666" />
@@ -112,7 +114,6 @@ export default function CustomDrawer({ isOpen, onClose }) {
           ))}
         </View>
 
-        {/* Settings */}
         <View style={styles.bottomSection}>
           <TouchableOpacity style={styles.settingsButton} onPress={onClose}>
             <Ionicons name="settings-outline" size={22} color="#666" />
@@ -131,7 +132,6 @@ export default function CustomDrawer({ isOpen, onClose }) {
   );
 }
 
-// ... (Phần styles giữ nguyên như cũ)
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
@@ -176,6 +176,7 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 32,
     marginBottom: 12,
+    backgroundColor: "#e5e7eb",
   },
   name: {
     fontSize: 20,

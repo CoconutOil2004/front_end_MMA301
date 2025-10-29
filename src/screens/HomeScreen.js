@@ -1,12 +1,22 @@
+<<<<<<< HEAD
 import React, { useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, SafeAreaView, View, RefreshControl, ActivityIndicator, Text, TextInput } from 'react-native';
+=======
+import React, { useState, useEffect, useContext } from 'react';
+import { ScrollView, StyleSheet, SafeAreaView, View, RefreshControl, ActivityIndicator, Text } from 'react-native';
+>>>>>>> origin/main
 import Header from '../components/Header';
 import PostCard from '../components/PostCard';
 import CustomDrawer from '../components/navigation/DrawerContent';
 import { getPosts } from '../service';
+<<<<<<< HEAD
 import { Ionicons } from '@expo/vector-icons'; // 
+=======
+import { AuthContext } from '../context/AuthContext'; // 👈 Import context
+>>>>>>> origin/main
 
 export default function HomeScreen({ navigation }) {
+  const { user, avatarUrl } = useContext(AuthContext); // 👈 Lấy user và avatar từ context
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [posts, setPosts] = useState([]);
@@ -20,10 +30,23 @@ export default function HomeScreen({ navigation }) {
 
   // Transform MongoDB post to PostCard format
   const transformPost = (post) => {
+    const postUserId = post.userId?._id || post.userId?.id;
+    const currentUserId = user?._id || user?.id;
+    const isCurrentUserPost = postUserId === currentUserId;
+
     return {
       id: post._id,
+<<<<<<< HEAD
       avatar: post.userId?.avatar || 'https://via.placeholder.com/50',
       name: post.userId?.name || 'Anonymous User',
+=======
+      // ✅ Nếu là post của user hiện tại, dùng avatarUrl từ context
+      avatar: isCurrentUserPost 
+        ? (avatarUrl || user?.avatar || 'https://via.placeholder.com/50')
+        : (post.userId?.avatar || 'https://via.placeholder.com/50'),
+      name: post.userId?.name || 'Anonymous User',
+      userId: post.userId, // 👈 Thêm userId để PostCard có thể check
+>>>>>>> origin/main
       degree: null,
       title: post.title || '',
       timeAgo: getTimeAgo(post.createdAt),
@@ -121,6 +144,27 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => {
     loadPosts();
   }, []);
+
+  // ✅ Re-transform posts khi avatarUrl thay đổi
+  useEffect(() => {
+    if (posts.length > 0 && avatarUrl) {
+      setPosts(prevPosts => 
+        prevPosts.map(post => {
+          const postUserId = post.userId?._id || post.userId?.id;
+          const currentUserId = user?._id || user?.id;
+          const isCurrentUserPost = postUserId === currentUserId;
+          
+          if (isCurrentUserPost) {
+            return {
+              ...post,
+              avatar: avatarUrl
+            };
+          }
+          return post;
+        })
+      );
+    }
+  }, [avatarUrl]);
 
   const handleSearchPress = () => {
     navigation.navigate('Search');
