@@ -18,13 +18,18 @@ import { uploadToCloudinary } from "../utils/cloudinaryUpload";
 import PostCard from "../components/PostCard";
 
 export default function ProfileScreen() {
-  const { logout, user, avatarUrl, updateAvatar } = useContext(AuthContext); // 👈 Lấy từ context
+  const { logout, user, updateAvatar, getDisplayAvatar } = useContext(AuthContext);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [displayAvatar, setDisplayAvatar] = useState(getDisplayAvatar());
 
-  // Fetch user posts
+  // ✅ Cập nhật avatar khi context thay đổi
+  useEffect(() => {
+    setDisplayAvatar(getDisplayAvatar());
+  }, [user, getDisplayAvatar]);
+
   useEffect(() => {
     fetchUserPosts();
   }, []);
@@ -35,7 +40,6 @@ export default function ProfileScreen() {
       const userId = user?._id || user?.id;
       if (userId) {
         const response = await getPostByUserId(userId);
-        console.log('User posts response:', response);
         if (response.success && response.data) {
           setPosts(response.data);
         }
@@ -79,32 +83,50 @@ export default function ProfileScreen() {
     }
   };
 
-
   const handleUploadAvatar = async (uri) => {
     try {
       setUploading(true);
 
-      // ✅ Thêm timestamp để tạo publicId unique mỗi lần upload
       const timestamp = Date.now();
       const userId = user?._id || user?.id || 'unknown';
 
+      // 1️⃣ Upload ảnh lên Cloudinary
+      console.log('📤 Đang upload avatar lên Cloudinary...');
       const response = await uploadToCloudinary(uri, {
         folder: 'avatars',
-        publicId: `avatar_${userId}_${timestamp}`, // 👈 THAY ĐỔI: Thêm timestamp
+        publicId: `avatar_${userId}_${timestamp}`,
         onProgress: (progress) => {
           console.log('Tiến trình tải lên:', Math.round(progress) + '%');
         }
       });
 
-      if (response.secure_url) {
-        // ✅ THAY ĐỔI: Thêm cache buster vào URL
-        const urlWithCacheBuster = `${response.secure_url}?t=${timestamp}`;
-        await updateAvatar(urlWithCacheBuster);
-        Alert.alert('Thành công', 'Avatar đã được cập nhật!');
+      if (!response.secure_url) {
+        throw new Error('Không nhận được URL từ Cloudinary');
       }
+
+      const newAvatarUrl = response.secure_url;
+      console.log('✅ Upload Cloudinary thành công:', newAvatarUrl);
+
+      // 2️⃣ Gọi API để lưu vào database + cập nhật context
+      const urlWithCacheBuster = `${newAvatarUrl}?t=${timestamp}`;
+      await updateAvatar(urlWithCacheBuster);
+      
+      // 3️⃣ Cập nhật local state
+      setDisplayAvatar(urlWithCacheBuster);
+
+      Alert.alert('Thành công', 'Avatar đã được cập nhật!');
+
     } catch (error) {
-      console.error('Error uploading avatar:', error);
-      Alert.alert('Lỗi', 'Không thể tải avatar lên');
+      console.error('❌ Error uploading avatar:', error);
+      
+      let errorMessage = 'Không thể tải avatar lên';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert('Lỗi', errorMessage);
     } finally {
       setUploading(false);
     }
@@ -127,8 +149,6 @@ export default function ProfileScreen() {
     );
   };
 
-  // ✅ Sử dụng avatarUrl từ context
-  const displayAvatar = avatarUrl || user?.avatar || "https://picsum.photos/seed/profile/200";
   const displayName = user?.name || 'Người dùng';
   const displayEmail = user?.email || '';
 
@@ -139,7 +159,6 @@ export default function ProfileScreen() {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      {/* Cover Photo */}
       <View style={styles.header}>
         <Image
           style={styles.coverPhoto}
@@ -147,12 +166,12 @@ export default function ProfileScreen() {
         />
       </View>
 
-      {/* Profile Info */}
       <View style={styles.profileInfoContainer}>
         <View style={styles.avatarContainer}>
           <Image
             style={styles.profilePhoto}
             source={{ uri: displayAvatar }}
+            key={displayAvatar}
           />
           <TouchableOpacity
             style={styles.editAvatarButton}
@@ -176,7 +195,6 @@ export default function ProfileScreen() {
         </Text>
       </View>
 
-      {/* Action Buttons */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={[styles.button, styles.primaryButton]}>
           <Text style={styles.primaryButtonText}>Chỉnh sửa</Text>
@@ -189,7 +207,6 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* About Card */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Giới thiệu</Text>
         <Text style={styles.aboutText}>
@@ -203,7 +220,6 @@ export default function ProfileScreen() {
         )}
       </View>
 
-      {/* Experience Card */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Kinh nghiệm</Text>
 
@@ -228,7 +244,6 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* Education Card */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Học vấn</Text>
         <View style={styles.infoRow}>
@@ -245,12 +260,10 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* Activity Section */}
       <View style={styles.activityTitleContainer}>
         <Text style={styles.cardTitle}>Hoạt động ({posts.length})</Text>
       </View>
 
-      {/* Posts List */}
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0A66C2" />
@@ -267,7 +280,6 @@ export default function ProfileScreen() {
         </View>
       )}
 
-      {/* Logout Button */}
       <View style={styles.logoutContainer}>
         <TouchableOpacity
           style={styles.logoutButton}

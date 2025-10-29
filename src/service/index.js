@@ -103,3 +103,9 @@ export const markMessagesAsRead = async (conversationId, userId) => {
   const res = await api.put("/messages/read", { conversationId, userId });
   return res.data;
 };
+
+//upload avatar
+export const updateAvatar = async (avatarUrl) => {
+  const res = await api.patch("/users/update-avatar", { avatar: avatarUrl });
+  return res.data;
+};

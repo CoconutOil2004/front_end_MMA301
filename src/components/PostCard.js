@@ -7,20 +7,20 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { AuthContext } from '../context/AuthContext'; // 👈 Import context
+import { AuthContext } from '../context/AuthContext';
+import { DEFAULT_AVATAR } from '../utils/constants'; // 👈 Import
 
 export default function PostCard({ post }) {
-  const { user, avatarUrl } = useContext(AuthContext); // 👈 Lấy từ context
+  const { user, avatarUrl } = useContext(AuthContext);
 
-  // Safely extract data with fallbacks
   const postUserId = post.userId?._id || post.userId?.id || post.userId;
   const currentUserId = user?._id || user?.id;
   
   // ✅ Nếu là post của user hiện tại, dùng avatarUrl từ context
   const isCurrentUserPost = postUserId === currentUserId;
   const avatar = isCurrentUserPost 
-    ? (avatarUrl || user?.avatar || 'https://via.placeholder.com/50')
-    : (post.avatar || post.userId?.avatar || 'https://via.placeholder.com/50');
+    ? (avatarUrl || user?.avatar || DEFAULT_AVATAR) // 👈 Dùng DEFAULT_AVATAR
+    : (post.avatar || post.userId?.avatar || DEFAULT_AVATAR); // 👈 Dùng DEFAULT_AVATAR
   
   const name = post.name || post.userId?.name || 'Anonymous User';
   const degree = post.degree || null;
@@ -36,7 +36,6 @@ export default function PostCard({ post }) {
   const status = post.status || 'open';
   const contactPhone = post.contactPhone || '';
 
-  // Format post type display
   const getPostTypeDisplay = () => {
     const type = post.type || 'lost';
     const typeMap = {
@@ -47,7 +46,6 @@ export default function PostCard({ post }) {
     return typeMap[type] || typeMap['lost'];
   };
 
-  // Format status badge
   const getStatusBadge = () => {
     if (status === 'closed') {
       return (
@@ -61,12 +59,11 @@ export default function PostCard({ post }) {
 
   return (
     <View style={styles.postCard}>
-      {/* Post Header */}
       <View style={styles.postHeader}>
         <Image
           source={{ uri: avatar}}
           style={styles.postAvatar}
-          key={avatar} // 👈 Force re-render khi avatar thay đổi
+          key={avatar}
         />
         <View style={styles.postInfo}>
           <View style={styles.postNameRow}>
@@ -103,13 +100,10 @@ export default function PostCard({ post }) {
         </View>
       </View>
 
-      {/* Status Badge */}
       {getStatusBadge()}
 
-      {/* Post Content */}
       <Text style={styles.postContent}>{content}</Text>
 
-      {/* Contact Info */}
       {contactPhone && (
         <View style={styles.contactInfo}>
           <Ionicons name="call-outline" size={14} color="#0A66C2" />
@@ -117,14 +111,12 @@ export default function PostCard({ post }) {
         </View>
       )}
 
-      {/* Translation Button */}
       {showTranslation && (
         <TouchableOpacity style={styles.translationButton}>
           <Text style={styles.translationText}>Show translation</Text>
         </TouchableOpacity>
       )}
 
-      {/* Post Image */}
       {image && (
         <View style={styles.postImageContainer}>
           <Image
@@ -140,7 +132,6 @@ export default function PostCard({ post }) {
         </View>
       )}
 
-      {/* Post Footer - Actions */}
       <View style={styles.postFooter}>
         <TouchableOpacity style={styles.footerButton}>
           <Ionicons 

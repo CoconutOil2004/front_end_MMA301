@@ -8,28 +8,27 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
+import { DEFAULT_AVATAR } from '../utils/constants'; // 👈 Import
 
 export default function Header({ onSearchPress, onMessagePress, onAvatarPress }) {
-  const { user, avatarUrl } = useContext(AuthContext); // 👈 Lấy từ context
+  const { user, avatarUrl } = useContext(AuthContext);
 
-  // ✅ Sử dụng avatarUrl từ context - tự động update khi thay đổi
-  const displayAvatar = avatarUrl || user?.avatar || require('../../assets/logo.jpg');
+  // ✅ Dùng DEFAULT_AVATAR chung
+  const displayAvatar = avatarUrl || user?.avatar || DEFAULT_AVATAR;
 
   return (
     <View style={styles.header}>
       <View style={styles.headerContent}>
-        {/* Avatar - Opens Drawer */}
         <TouchableOpacity 
           style={styles.avatar}
           onPress={onAvatarPress}
         >
           <Image
-            source={typeof displayAvatar === 'string' ? { uri: displayAvatar } : displayAvatar}
+            source={{ uri: displayAvatar }}
             style={styles.avatarImage}
           />
         </TouchableOpacity>
 
-        {/* Search Bar */}
         <TouchableOpacity 
           style={styles.searchContainer}
           onPress={onSearchPress}
@@ -44,7 +43,6 @@ export default function Header({ onSearchPress, onMessagePress, onAvatarPress })
           />
         </TouchableOpacity>
 
-        {/* Message Icon */}
         <TouchableOpacity 
           style={styles.messageButton}
           onPress={onMessagePress}
@@ -75,6 +73,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
+    backgroundColor: '#E0E0E0', // 👈 Placeholder khi load
   },
   searchContainer: {
     flex: 1,
