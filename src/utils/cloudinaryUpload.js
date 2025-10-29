@@ -1,6 +1,6 @@
 // utils/cloudinaryUpload.js
 
-import { CLOUDINARY_CONFIG } from '../config/cloudinary.config';
+import { CLOUDINARY_CONFIG } from '../../config/cloudinary.config';
 
 /**
  * Upload ảnh lên Cloudinary

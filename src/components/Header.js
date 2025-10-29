@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,21 +8,29 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from "../context/ThemeContext";
+import { AuthContext } from '../context/AuthContext'; 
+import { DEFAULT_AVATAR } from '../utils/constants';
 
 export default function Header({ onSearchPress, onMessagePress, onAvatarPress }) {
+  // Lấy theme
   const { theme } = useTheme();
+  // Lấy styles (phải sau khi lấy theme)
   const styles = getStyles(theme.colors);
+  // Lấy auth
+  const { user, avatarUrl } = useContext(AuthContext);
+
+  // Dùng DEFAULT_AVATAR chung
+  const displayAvatar = avatarUrl || user?.avatar || DEFAULT_AVATAR;
 
   return (
     <View style={styles.header}>
       <View style={styles.headerContent}>
-        {/* Avatar - Opens Drawer */}
-        <TouchableOpacity 
-        style={styles.avatar} 
-        onPress={onAvatarPress}
+        <TouchableOpacity
+          style={styles.avatar}
+          onPress={onAvatarPress}
         >
           <Image
-            source={require('../../assets/logo.jpg')}
+            source={{ uri: displayAvatar }}
             style={styles.avatarImage}
           />
         </TouchableOpacity>
@@ -47,10 +55,9 @@ export default function Header({ onSearchPress, onMessagePress, onAvatarPress })
           />
         </TouchableOpacity>
 
-        {/* Message Icon */}
-        <TouchableOpacity 
-        style={styles.messageButton} 
-        onPress={onMessagePress}
+        <TouchableOpacity
+          style={styles.messageButton}
+          onPress={onMessagePress}
         >
           <Ionicons
             name="chatbox-ellipses-outline"
@@ -72,8 +79,8 @@ const getStyles = (colors) =>
       borderBottomColor: colors.border,
     },
     headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+      flexDirection: 'row',
+      alignItems: 'center',
       paddingHorizontal: 12,
       paddingVertical: 8,
     },

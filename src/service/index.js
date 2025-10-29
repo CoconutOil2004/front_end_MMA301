@@ -44,6 +44,10 @@ export const createPost = async (data) => {
   const res = await api.post("/posts", data);
   return res.data;
 };
+export const getPostByUserId = async (userId) => {
+  const res = await api.get(`/posts/user/${userId}`);
+  return res.data;
+};
 
 export const getPosts = async (page = 1, limit = 10) => {
   const res = await api.get(`/posts?page=${page}&limit=${limit}`);
@@ -97,5 +101,11 @@ export const sendMessage = async (conversationId, senderId, text) => {
 // ---- Đánh dấu tin nhắn là đã đọc ----
 export const markMessagesAsRead = async (conversationId, userId) => {
   const res = await api.put("/messages/read", { conversationId, userId });
+  return res.data;
+};
+
+//upload avatar
+export const updateAvatar = async (avatarUrl) => {
+  const res = await api.patch("/users/update-avatar", { avatar: avatarUrl });
   return res.data;
 };
