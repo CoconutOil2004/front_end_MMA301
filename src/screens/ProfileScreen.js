@@ -5,130 +5,160 @@ import {
   Image,
   ScrollView,
   TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from 'expo-image-picker';
 import { AuthContext } from "../context/AuthContext";
-import { useContext } from "react";
-//================================================================
-// 1. COMPONENT POSTCARD (Đã được cung cấp)
-// (Styles đã được đổi tên thành 'postCardStyles' để tránh xung đột)
-//================================================================
-function PostCard({ post }) {
-  const {
-    avatar,
-    name,
-    degree,
-    title,
-    timeAgo,
-    isEdited,
-    content,
-    showTranslation,
-    image,
-    hasHD,
-    isFollowing,
-  } = post;
-  const handleLogout = async () => {
-    await AsyncStorage.removeItem("userToken");
-    // Sau khi xoá token, AppNavigator sẽ tự hiểu là chưa login → quay lại Login
-  };
-  return (
-    <View style={postCardStyles.postCard}>
-      {/* Post Header */}
-      <View style={postCardStyles.postHeader}>
-        <Image source={{ uri: avatar }} style={postCardStyles.postAvatar} />
-        <View style={postCardStyles.postInfo}>
-          <View style={postCardStyles.postNameRow}>
-            <Text style={postCardStyles.postName}>{name}</Text>
-            {degree && (
-              <Text style={postCardStyles.postDegree}>· {degree}</Text>
-            )}
-          </View>
-          <Text style={postCardStyles.postTitle} numberOfLines={1}>
-            {title}
-          </Text>
-          <View style={postCardStyles.postMeta}>
-            <Text style={postCardStyles.postTime}>
-              {timeAgo}
-              {isEdited && " · Edited"} ·
-            </Text>
-            <Ionicons
-              name="earth"
-              size={12}
-              color="#666"
-              style={{ marginLeft: 2 }}
-            />
-          </View>
-        </View>
-
-        <View style={postCardStyles.postActions}>
-          {!isFollowing && (
-            <TouchableOpacity style={postCardStyles.followButton}>
-              <Ionicons name="add" size={18} color="#0A66C2" />
-              <Text style={postCardStyles.followText}>Follow</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity style={postCardStyles.moreButton}>
-            <Ionicons name="close" size={20} color="#666" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Post Content */}
-      <Text style={postCardStyles.postContent}>{content}</Text>
-
-      {/* Translation Button */}
-      {showTranslation && (
-        <TouchableOpacity style={postCardStyles.translationButton}>
-          <Text style={postCardStyles.translationText}>Show translation</Text>
-        </TouchableOpacity>
-      )}
-
-      {/* Post Image */}
-      {image && (
-        <View style={postCardStyles.postImageContainer}>
-          <Image
-            source={{ uri: image }}
-            style={postCardStyles.postImage}
-            resizeMode="cover"
-          />
-          {hasHD && (
-            <View style={postCardStyles.hdBadge}>
-              <Text style={postCardStyles.hdText}>HD</Text>
-            </View>
-          )}
-        </View>
-      )}
-
-      {/* Post Footer - Actions */}
-      <View style={postCardStyles.postFooter}>
-        <TouchableOpacity style={postCardStyles.footerButton}>
-          <Ionicons name="thumbs-up-outline" size={20} color="#666" />
-          <Text style={postCardStyles.footerButtonText}>Like</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={postCardStyles.footerButton}>
-          <Ionicons name="chatbubble-outline" size={20} color="#666" />
-          <Text style={postCardStyles.footerButtonText}>Comment</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={postCardStyles.footerButton}>
-          <Ionicons name="arrow-redo-outline" size={20} color="#666" />
-          <Text style={postCardStyles.footerButtonText}>Share</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={postCardStyles.footerButton}>
-          <Ionicons name="paper-plane-outline" size={20} color="#666" />
-          <Text style={postCardStyles.footerButtonText}>Send</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
+import { useContext, useState, useEffect } from "react";
+import { getPostByUserId } from "../service";
+import { uploadToCloudinary } from "../utils/cloudinaryUpload";
+import PostCard from "../components/PostCard";
 
 export default function ProfileScreen() {
-  const { logout } = useContext(AuthContext);
+  const { logout, user, updateAvatar, getDisplayAvatar } = useContext(AuthContext);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [displayAvatar, setDisplayAvatar] = useState(getDisplayAvatar());
+
+  // ✅ Cập nhật avatar khi context thay đổi
+  useEffect(() => {
+    setDisplayAvatar(getDisplayAvatar());
+  }, [user, getDisplayAvatar]);
+
+  useEffect(() => {
+    fetchUserPosts();
+  }, []);
+
+  const fetchUserPosts = async () => {
+    try {
+      setLoading(true);
+      const userId = user?._id || user?.id;
+      if (userId) {
+        const response = await getPostByUserId(userId);
+        if (response.success && response.data) {
+          setPosts(response.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      Alert.alert('Lỗi', 'Không thể tải bài viết');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchUserPosts();
+    setRefreshing(false);
+  };
+
+  const handleImagePick = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== 'granted') {
+        Alert.alert('Cần quyền truy cập', 'Vui lòng cấp quyền truy cập thư viện ảnh để tải avatar');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        await handleUploadAvatar(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Lỗi', 'Không thể chọn ảnh');
+    }
+  };
+
+  const handleUploadAvatar = async (uri) => {
+    try {
+      setUploading(true);
+
+      const timestamp = Date.now();
+      const userId = user?._id || user?.id || 'unknown';
+
+      // 1️⃣ Upload ảnh lên Cloudinary
+      console.log('📤 Đang upload avatar lên Cloudinary...');
+      const response = await uploadToCloudinary(uri, {
+        folder: 'avatars',
+        publicId: `avatar_${userId}_${timestamp}`,
+        onProgress: (progress) => {
+          console.log('Tiến trình tải lên:', Math.round(progress) + '%');
+        }
+      });
+
+      if (!response.secure_url) {
+        throw new Error('Không nhận được URL từ Cloudinary');
+      }
+
+      const newAvatarUrl = response.secure_url;
+      console.log('✅ Upload Cloudinary thành công:', newAvatarUrl);
+
+      // 2️⃣ Gọi API để lưu vào database + cập nhật context
+      const urlWithCacheBuster = `${newAvatarUrl}?t=${timestamp}`;
+      await updateAvatar(urlWithCacheBuster);
+      
+      // 3️⃣ Cập nhật local state
+      setDisplayAvatar(urlWithCacheBuster);
+
+      Alert.alert('Thành công', 'Avatar đã được cập nhật!');
+
+    } catch (error) {
+      console.error('❌ Error uploading avatar:', error);
+      
+      let errorMessage = 'Không thể tải avatar lên';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert('Lỗi', errorMessage);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Đăng xuất',
+      'Bạn có chắc chắn muốn đăng xuất?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Đăng xuất',
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+          }
+        }
+      ]
+    );
+  };
+
+  const displayName = user?.name || 'Người dùng';
+  const displayEmail = user?.email || '';
 
   return (
-    <ScrollView style={styles.container}>
-      {/* === Header: Cover Photo === */}
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
       <View style={styles.header}>
         <Image
           style={styles.coverPhoto}
@@ -136,53 +166,70 @@ export default function ProfileScreen() {
         />
       </View>
 
-      {/* === Profile Info: Pic, Name, Headline === */}
       <View style={styles.profileInfoContainer}>
-        <Image
-          style={styles.profilePhoto}
-          source={{ uri: "https://picsum.photos/seed/profile/200" }}
-        />
-        <Text style={styles.name}>Nguyễn Văn A</Text>
+        <View style={styles.avatarContainer}>
+          <Image
+            style={styles.profilePhoto}
+            source={{ uri: displayAvatar }}
+            key={displayAvatar}
+          />
+          <TouchableOpacity
+            style={styles.editAvatarButton}
+            onPress={handleImagePick}
+            disabled={uploading}
+          >
+            {uploading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Ionicons name="camera" size={18} color="#fff" />
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.name}>{displayName}</Text>
         <Text style={styles.headline}>
-          Senior React Native Developer | Tech Lead
+          {user?.headline || 'React Native Developer'}
         </Text>
-        <Text style={styles.location}>Hanoi, Vietnam • 500+ connections</Text>
+        <Text style={styles.location}>
+          {user?.location || 'Hanoi, Vietnam'} • {posts.length} bài viết
+        </Text>
       </View>
 
-      {/* === Action Buttons === */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={[styles.button, styles.primaryButton]}>
-          <Text style={styles.primaryButtonText}>Connect</Text>
+          <Text style={styles.primaryButtonText}>Chỉnh sửa</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.button, styles.secondaryButton]}>
-          <Text style={styles.secondaryButtonText}>Message</Text>
+          <Text style={styles.secondaryButtonText}>Chia sẻ</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.button, styles.secondaryButton]}>
           <Ionicons name="ellipsis-horizontal" size={20} color="#374151" />
         </TouchableOpacity>
       </View>
 
-      {/* === About Card === */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>About</Text>
+        <Text style={styles.cardTitle}>Giới thiệu</Text>
         <Text style={styles.aboutText}>
-          Passionate software engineer with 5+ years of experience in mobile
-          development using React Native. Always eager to learn new technologies
-          and build amazing user experiences.
+          {user?.about || 'Lập trình viên đam mê công nghệ, chuyên phát triển ứng dụng di động với React Native. Luôn học hỏi và cải thiện kỹ năng mỗi ngày.'}
         </Text>
+        {displayEmail && (
+          <View style={styles.emailContainer}>
+            <Ionicons name="mail-outline" size={16} color="#666" />
+            <Text style={styles.emailText}>{displayEmail}</Text>
+          </View>
+        )}
       </View>
 
-      {/* === Experience Card === */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Experience</Text>
+        <Text style={styles.cardTitle}>Kinh nghiệm</Text>
 
         <View style={styles.infoRow}>
           <MaterialIcons name="work" size={32} color="#6b7280" />
           <View style={styles.infoTextContainer}>
             <Text style={styles.infoTitle}>Senior React Native Developer</Text>
-            <Text style={styles.infoSubText}>Google • Full-time</Text>
+            <Text style={styles.infoSubText}>Tech Company • Toàn thời gian</Text>
             <Text style={styles.infoDate}>
-              Jan 2023 - Present • 2 yrs 10 mos
+              Tháng 1, 2023 - Hiện tại • 2 năm
             </Text>
           </View>
         </View>
@@ -191,206 +238,69 @@ export default function ProfileScreen() {
           <MaterialIcons name="work" size={32} color="#6b7280" />
           <View style={styles.infoTextContainer}>
             <Text style={styles.infoTitle}>React Native Developer</Text>
-            <Text style={styles.infoSubText}>Facebook • Full-time</Text>
-            <Text style={styles.infoDate}>Jan 2020 - Dec 2022 • 3 yrs</Text>
+            <Text style={styles.infoSubText}>Startup • Toàn thời gian</Text>
+            <Text style={styles.infoDate}>Tháng 1, 2020 - Tháng 12, 2022 • 3 năm</Text>
           </View>
         </View>
       </View>
 
-      {/* === Education Card === */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Education</Text>
+        <Text style={styles.cardTitle}>Học vấn</Text>
         <View style={styles.infoRow}>
           <MaterialIcons name="school" size={32} color="#6b7280" />
           <View style={styles.infoTextContainer}>
             <Text style={styles.infoTitle}>
-              Hanoi University of Science and Technology
+              Đại học Bách Khoa Hà Nội
             </Text>
             <Text style={styles.infoSubText}>
-              Bachelor's degree, Computer Science
+              Cử nhân, Khoa học Máy tính
             </Text>
             <Text style={styles.infoDate}>2015 - 2019</Text>
           </View>
         </View>
       </View>
 
-      {/* === Activity / Posts === */}
       <View style={styles.activityTitleContainer}>
-        <Text style={styles.cardTitle}>Activity</Text>
+        <Text style={styles.cardTitle}>Hoạt động ({posts.length})</Text>
       </View>
 
-      {/* Render danh sách bài viết */}
-      {/* {MOCK_POSTS.map((post) => (
-        <PostCard key={post.id} post={post} />
-      ))} */}
-      <View style={{ alignItems: "center", marginVertical: 20 }}>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0A66C2" />
+          <Text style={styles.loadingText}>Đang tải bài viết...</Text>
+        </View>
+      ) : posts.length > 0 ? (
+        posts.map((post) => (
+          <PostCard key={post._id || post.id} post={post} />
+        ))
+      ) : (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="document-text-outline" size={48} color="#ccc" />
+          <Text style={styles.emptyText}>Chưa có bài viết nào</Text>
+        </View>
+      )}
+
+      <View style={styles.logoutContainer}>
         <TouchableOpacity
-          style={{
-            backgroundColor: "#EF4444",
-            paddingVertical: 12,
-            paddingHorizontal: 24,
-            borderRadius: 10,
-          }}
-          onPress={async () => {
-            await logout();
-            Alert.alert("Đăng xuất", "Bạn đã đăng xuất thành công!");
-          }}
+          style={styles.logoutButton}
+          onPress={handleLogout}
         >
-          <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
-            Đăng xuất
-          </Text>
+          <Ionicons name="log-out-outline" size={20} color="#fff" style={styles.logoutIcon} />
+          <Text style={styles.logoutText}>Đăng xuất</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
   );
 }
 
-//================================================================
-// 4. STYLESHEET CỦA POSTCARD
-//================================================================
-const postCardStyles = StyleSheet.create({
-  postCard: {
-    backgroundColor: "#fff",
-    marginTop: 8,
-    // Thay vì marginHorizontal, chúng ta để nó full-width
-    // và thêm border để tách biệt
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: "#E0E0E0",
-  },
-  postHeader: {
-    flexDirection: "row",
-    marginBottom: 12,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  postAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#E0E0E0",
-  },
-  postInfo: {
-    flex: 1,
-    marginLeft: 8,
-  },
-  postNameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  postName: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#000",
-  },
-  postDegree: {
-    fontSize: 12,
-    color: "#666",
-    marginLeft: 4,
-  },
-  postTitle: {
-    fontSize: 12,
-    color: "#666",
-    marginTop: 2,
-  },
-  postMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 4,
-  },
-  postTime: {
-    fontSize: 12,
-    color: "#666",
-  },
-  postActions: {
-    alignItems: "flex-end",
-  },
-  followButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  followText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#0A66C2",
-    marginLeft: 4,
-  },
-  moreButton: {
-    padding: 4,
-  },
-  postContent: {
-    fontSize: 14,
-    color: "#000",
-    lineHeight: 20,
-    marginBottom: 8,
-    paddingHorizontal: 16,
-  },
-  translationButton: {
-    alignSelf: "flex-start",
-    marginBottom: 12,
-    paddingHorizontal: 16,
-  },
-  translationText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#666",
-  },
-  postImageContainer: {
-    position: "relative",
-    // Bỏ borderRadius và overflow để ảnh full-width
-    marginBottom: 12,
-  },
-  postImage: {
-    width: "100%",
-    height: 250, // Tăng chiều cao ảnh một chút
-    backgroundColor: "#E0E0E0",
-  },
-  hdBadge: {
-    position: "absolute",
-    top: 8,
-    left: 8,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  hdText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  postFooter: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#E0E0E0",
-  },
-  footerButton: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  footerButtonText: {
-    fontSize: 14,
-    color: "#666",
-    marginLeft: 4,
-  },
-});
-
-//================================================================
-// 5. STYLESHEET CỦA PROFILESCREEN
-//================================================================
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f3f4f6", // Light gray background
-    paddingBottom: 24, // Thêm padding ở dưới
+    backgroundColor: "#f3f4f6",
   },
   header: {
     height: 180,
-    backgroundColor: "#d1d5db", // Placeholder color
+    backgroundColor: "#d1d5db",
   },
   coverPhoto: {
     width: "100%",
@@ -398,13 +308,15 @@ const styles = StyleSheet.create({
   },
   profileInfoContainer: {
     alignItems: "center",
-    marginTop: -60, // Pulls the profile picture up to overlap
+    marginTop: -60,
     paddingHorizontal: 16,
-    backgroundColor: "#ffffff", // Thêm nền trắng cho phần info
+    backgroundColor: "#ffffff",
     paddingBottom: 16,
-    // Thêm border dưới để tách biệt
     borderBottomWidth: 1,
     borderBottomColor: "#E0E0E0",
+  },
+  avatarContainer: {
+    position: 'relative',
   },
   profilePhoto: {
     width: 120,
@@ -412,7 +324,20 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     borderColor: "#ffffff",
     borderWidth: 4,
-    backgroundColor: "#e5e7eb", // Placeholder
+    backgroundColor: "#e5e7eb",
+  },
+  editAvatarButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#0A66C2',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#ffffff',
   },
   name: {
     fontSize: 24,
@@ -435,8 +360,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     paddingHorizontal: 16,
-    paddingVertical: 12, // Thêm padding dọc
-    backgroundColor: "#ffffff", // Nền trắng
+    paddingVertical: 12,
+    backgroundColor: "#ffffff",
     borderBottomWidth: 1,
     borderBottomColor: "#E0E0E0",
   },
@@ -449,7 +374,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   primaryButton: {
-    backgroundColor: "#2563eb", // Blue
+    backgroundColor: "#2563eb",
   },
   primaryButtonText: {
     color: "#ffffff",
@@ -457,7 +382,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   secondaryButton: {
-    backgroundColor: "#e5e7eb", // Light gray
+    backgroundColor: "#e5e7eb",
     borderColor: "#d1d5db",
     borderWidth: 1,
   },
@@ -492,6 +417,19 @@ const styles = StyleSheet.create({
     color: "#4b5563",
     lineHeight: 20,
   },
+  emailContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  emailText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 8,
+  },
   infoRow: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -515,13 +453,62 @@ const styles = StyleSheet.create({
     color: "#6b7280",
     marginTop: 2,
   },
-  // Style mới cho tiêu đề Activity
   activityTitleContainer: {
     paddingHorizontal: 16,
     marginTop: 12,
     backgroundColor: "#ffffff",
     paddingTop: 16,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#E0E0E0",
+  },
+  loadingContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#666',
+  },
+  emptyContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  emptyText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#999',
+  },
+  logoutContainer: {
+    alignItems: "center",
+    marginVertical: 24,
+    marginBottom: 40,
+  },
+  logoutButton: {
+    backgroundColor: "#EF4444",
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  logoutIcon: {
+    marginRight: 8,
+  },
+  logoutText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

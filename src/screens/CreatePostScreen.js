@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useContext } from 'react';
 import {
   View,
   Text,
@@ -19,8 +19,10 @@ import { createPost } from '../service';
 import ImagePicker from '../components/ImagePicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CLOUDINARY_CONFIG } from '../../config/cloudinary.config';
-
+import { AuthContext } from "../context/AuthContext";
+import { DEFAULT_AVATAR } from "../utils/constants"; // 👈 Import
 export default function CreatePostScreen({ navigation }) {
+  const { logout, user, avatarUrl, updateAvatar } = useContext(AuthContext);
   const [type, setType] = useState('lost');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -31,6 +33,7 @@ export default function CreatePostScreen({ navigation }) {
     lat: null,
     lng: null,
   });
+  const displayAvatar = avatarUrl || user?.avatar || DEFAULT_AVATAR;
   const [userInfo, setUserInfo] = useState({
     name: 'Người dùng',
     avatar: null,
@@ -72,11 +75,11 @@ export default function CreatePostScreen({ navigation }) {
    */
   const uploadImageToCloudinary = async (uri) => {
     setIsUploading(true);
-    
+
     try {
       // Tạo FormData để upload
       const formData = new FormData();
-      
+
       // Lấy tên file và extension
       const filename = uri.split('/').pop();
       const match = /\.(\w+)$/.exec(filename);
@@ -117,10 +120,10 @@ export default function CreatePostScreen({ navigation }) {
 
       console.log('Upload thành công:', data.secure_url);
       setIsUploading(false);
-      
+
       // Trả về URL ảnh
       return data.secure_url;
-      
+
     } catch (error) {
       console.error('Lỗi upload ảnh lên Cloudinary:', error);
       setIsUploading(false);
@@ -216,10 +219,10 @@ export default function CreatePostScreen({ navigation }) {
       );
     } catch (error) {
       console.error('Lỗi đăng bài:', error);
-      
+
       // Xử lý lỗi chi tiết
       let errorMessage = 'Không thể đăng bài. Vui lòng thử lại!';
-      
+
       if (error.response) {
         errorMessage = error.response.data?.message || errorMessage;
         console.error('Lỗi từ server:', error.response.data);
@@ -258,11 +261,11 @@ export default function CreatePostScreen({ navigation }) {
     return postTypes.find(t => t.value === type);
   };
 
-  const isButtonDisabled = 
-    isPosting || 
-    isUploading || 
-    !title.trim() || 
-    !description.trim() || 
+  const isButtonDisabled =
+    isPosting ||
+    isUploading ||
+    !title.trim() ||
+    !description.trim() ||
     !selectedImage;
 
   return (
@@ -291,50 +294,46 @@ export default function CreatePostScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        <ScrollView 
-          style={styles.scrollView} 
+        <ScrollView
+          style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
           {/* User Info */}
           <View style={styles.userInfo}>
             <Image
-              source={
-                userInfo.avatar
-                  ? { uri: userInfo.avatar }
-                  : require('../../assets/logo.jpg')
-              }
               style={styles.avatar}
+              source={{ uri: displayAvatar }}
             />
             <View style={styles.userDetails}>
               <Text style={styles.userName}>{userInfo.name}</Text>
-              
+
               {/* Post Type Selector */}
               <View style={styles.typeSelector}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[
-                    styles.typeButton, 
+                    styles.typeButton,
                     { backgroundColor: getCurrentType().color + '20' }
                   ]}
                   onPress={() => setShowBottomSheet(true)}
                 >
-                  <Ionicons 
-                    name={getCurrentType().icon} 
-                    size={16} 
-                    color={getCurrentType().color} 
+                  <Ionicons
+                    name={getCurrentType().icon}
+                    size={16}
+                    color={getCurrentType().color}
                   />
-                  <Text 
+                  <Text
                     style={[
-                      styles.typeButtonText, 
+                      styles.typeButtonText,
                       { color: getCurrentType().color }
                     ]}
                   >
                     {getCurrentType().label}
                   </Text>
-                  <Ionicons 
-                    name="chevron-down" 
-                    size={16} 
-                    color={getCurrentType().color} 
+                  <Ionicons
+                    name="chevron-down"
+                    size={16}
+                    color={getCurrentType().color}
                   />
                 </TouchableOpacity>
               </View>
@@ -404,7 +403,7 @@ export default function CreatePostScreen({ navigation }) {
                 placeholder="Địa điểm (tùy chọn)"
                 placeholderTextColor="#9CA3AF"
                 value={location.placeName}
-                onChangeText={(text) => 
+                onChangeText={(text) =>
                   setLocation({ ...location, placeName: text })
                 }
                 maxLength={200}
@@ -430,18 +429,18 @@ export default function CreatePostScreen({ navigation }) {
           animationType="slide"
           onRequestClose={() => setShowBottomSheet(false)}
         >
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.modalOverlay}
             activeOpacity={1}
             onPress={() => setShowBottomSheet(false)}
           >
-            <View 
-              style={styles.bottomSheet} 
+            <View
+              style={styles.bottomSheet}
               onStartShouldSetResponder={() => true}
             >
               <View style={styles.bottomSheetHandle} />
               <Text style={styles.bottomSheetTitle}>Chọn loại bài viết</Text>
-              
+
               {postTypes.map((postType) => (
                 <TouchableOpacity
                   key={postType.value}
@@ -454,26 +453,26 @@ export default function CreatePostScreen({ navigation }) {
                     setShowBottomSheet(false);
                   }}
                 >
-                  <View 
+                  <View
                     style={[
-                      styles.typeIconContainer, 
+                      styles.typeIconContainer,
                       { backgroundColor: postType.color + '20' }
                     ]}
                   >
-                    <Ionicons 
-                      name={postType.icon} 
-                      size={24} 
-                      color={postType.color} 
+                    <Ionicons
+                      name={postType.icon}
+                      size={24}
+                      color={postType.color}
                     />
                   </View>
                   <Text style={styles.bottomSheetItemText}>
                     {postType.label}
                   </Text>
                   {type === postType.value && (
-                    <Ionicons 
-                      name="checkmark" 
-                      size={24} 
-                      color={postType.color} 
+                    <Ionicons
+                      name="checkmark"
+                      size={24}
+                      color={postType.color}
                     />
                   )}
                 </TouchableOpacity>
