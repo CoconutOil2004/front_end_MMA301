@@ -289,6 +289,7 @@ const getStyles = (colors) =>
     content: {
       flex: 1,
     },
+    
     centerContainer: {
       flex: 1,
     justifyContent: 'center',
