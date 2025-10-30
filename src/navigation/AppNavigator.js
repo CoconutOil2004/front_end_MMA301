@@ -4,7 +4,9 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { AuthContext } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 
+// Import các màn hình
 import HomeScreen from "../screens/HomeScreen";
 import SearchScreen from "../screens/SearchScreen";
 import CreatePostScreen from "../screens/CreatePostScreen";
@@ -14,11 +16,15 @@ import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import MessagesScreen from "../screens/MessagesScreen";
 import ChatDetailScreen from "../screens/ChatDetailScreen";
+import SettingsScreen from "../screens/SettingsScreen";
+import { ActivityIndicator, View } from "react-native";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 function MainTabs() {
+  const { theme } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -34,14 +40,19 @@ function MainTabs() {
             iconName = focused ? "person" : "person-outline";
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: "#F97316",
-        tabBarInactiveTintColor: "gray",
+        // 'placeholder' giờ đã tồn tại trong theme.colors
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.placeholder,
         headerShown: false,
+        tabBarStyle: {
+          backgroundColor: theme.colors.card,
+          borderTopColor: theme.colors.border,
+        },
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen 
-        name="CreatePost" 
+      <Tab.Screen
+        name="CreatePost"
         component={CreatePostScreen}
         options={{
           tabBarLabel: "Tạo bài",
@@ -60,6 +71,8 @@ function AppStack() {
       <Stack.Screen name="MainTabs" component={MainTabs} />
       <Stack.Screen name="Messages" component={MessagesScreen} />
       <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="Search" component={SearchScreen} />
     </Stack.Navigator>
   );
 }
@@ -76,11 +89,26 @@ function AuthStack() {
 
 export default function AppNavigator() {
   const { isLoggedIn, loading } = useContext(AuthContext);
+  const { theme } = useTheme(); // 1. Lấy theme đầy đủ từ context
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: theme.colors.background,
+        }}
+      >
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
+  }
 
   return (
-    <NavigationContainer>
+    // 2. Truyền theme đầy đủ vào NavigationContainer
+    <NavigationContainer theme={theme}>
       {isLoggedIn ? <AppStack /> : <AuthStack />}
     </NavigationContainer>
   );

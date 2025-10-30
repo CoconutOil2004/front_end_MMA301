@@ -11,15 +11,18 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../../context/ThemeContext";
 import { AuthContext } from "../../context/AuthContext";
 import { DEFAULT_AVATAR } from "../../utils/constants"; // 👈 Import
 
 const { width } = Dimensions.get("window");
 const DRAWER_WIDTH = 320;
 
-export default function CustomDrawer({ isOpen, onClose }) {
+export default function DrawerContent({ isOpen, onClose }) {
   const translateX = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const navigation = useNavigation();
+  const { theme } = useTheme();
+  const styles = getStyles(theme.colors);
   const { user, avatarUrl } = useContext(AuthContext);
 
   useEffect(() => {
@@ -33,6 +36,12 @@ export default function CustomDrawer({ isOpen, onClose }) {
   const handleNavigateToProfile = () => {
     onClose();
     navigation.navigate("Profile");
+  };
+
+  // 1. Tạo hàm xử lý điều hướng cho Settings
+  const handleNavigateToSettings = () => {
+    onClose(); // Đóng drawer
+    navigation.navigate("Settings"); // Điều hướng đến màn hình 'Settings'
   };
 
   if (!isOpen) return null;
@@ -59,12 +68,22 @@ export default function CustomDrawer({ isOpen, onClose }) {
   return (
     <View style={styles.container}>
       <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.overlay} />
+        <Animated.View
+          style={[
+            styles.overlay,
+            {
+              opacity: translateX.interpolate({
+                inputRange: [-DRAWER_WIDTH, 0],
+                outputRange: [0, 1],
+              }),
+            },
+          ]}
+        />
       </TouchableWithoutFeedback>
 
       <Animated.View style={[styles.drawer, { transform: [{ translateX }] }]}>
         <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-          <Ionicons name="close" size={24} color="#666" />
+          <Ionicons name="close" size={24} color={theme.colors.placeholder} />
         </TouchableOpacity>
 
         <View style={styles.profileSection}>
@@ -104,25 +123,41 @@ export default function CustomDrawer({ isOpen, onClose }) {
               onPress={onClose}
             >
               <View style={styles.menuItemLeft}>
-                <Ionicons name={item.icon} size={22} color="#666" />
+                <Ionicons
+                  name={item.icon}
+                  size={22}
+                  color={theme.colors.placeholder}
+                />
                 <Text style={styles.menuItemText}>{item.label}</Text>
               </View>
               {item.hasChevron && (
-                <Ionicons name="chevron-forward" size={20} color="#999" />
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={theme.colors.placeholder}
+                />
               )}
             </TouchableOpacity>
           ))}
         </View>
 
         <View style={styles.bottomSection}>
-          <TouchableOpacity style={styles.settingsButton} onPress={onClose}>
-            <Ionicons name="settings-outline" size={22} color="#666" />
+          {/* 2. Cập nhật onPress cho nút Settings */}
+          <TouchableOpacity
+            style={styles.settingsButton}
+            onPress={handleNavigateToSettings}
+          >
+            <Ionicons
+              name="settings-outline"
+              size={22}
+              color={theme.colors.placeholder}
+            />
             <Text style={styles.settingsText}>Settings</Text>
           </TouchableOpacity>
 
           <View style={styles.premiumContainer}>
             <TouchableOpacity style={styles.premiumButton}>
-              <Ionicons name="ribbon-outline" size={20} color="#000" />
+              <Ionicons name="ribbon-outline" size={20} color={theme.colors.activeText} />
               <Text style={styles.premiumText}>Try Premium for đ0</Text>
             </TouchableOpacity>
           </View>
@@ -132,6 +167,162 @@ export default function CustomDrawer({ isOpen, onClose }) {
   );
 }
 
+// 4. Hàm styles động
+const getStyles = (colors) =>
+  StyleSheet.create({
+    container: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 1000,
+    },
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      // flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+    },
+    drawer: {
+      position: "absolute",
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: DRAWER_WIDTH,
+      backgroundColor: colors.card,
+      shadowColor: "#000",
+      shadowOffset: { width: 2, height: 0 },
+      shadowOpacity: 0.25,
+      shadowRadius: 10,
+      elevation: 10,
+    },
+    closeButton: {
+      position: "absolute",
+      top: 16,
+      right: 16,
+      padding: 8,
+      zIndex: 10,
+    },
+    profileSection: {
+      padding: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      marginTop: 40,
+    },
+    avatar: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      marginBottom: 12,
+    },
+    name: {
+      fontSize: 20,
+      fontWeight: "600",
+      color: colors.text,
+      marginBottom: 4,
+    },
+    jobTitle: {
+      fontSize: 14,
+      color: colors.placeholder,
+      marginBottom: 2,
+    },
+    location: {
+      fontSize: 14,
+      color: colors.placeholder,
+      marginBottom: 12,
+    },
+    companyBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 8,
+    },
+    companyIcon: {
+      width: 24,
+      height: 24,
+    backgroundColor: "#0A66C2", // LinkedIn blue
+      borderRadius: 4,
+      justifyContent: "center",
+      alignItems: "center",
+      marginRight: 8,
+    },
+    companyIconText: {
+      color: "#fff",
+      fontSize: 12,
+      fontWeight: "bold",
+    },
+    companyName: {
+      fontSize: 14,
+      fontWeight: "500",
+      color: colors.text,
+    },
+    profileViews: {
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    viewsText: {
+      fontSize: 14,
+      color: colors.placeholder,
+    },
+    viewsNumber: {
+      color: colors.primary,
+      fontWeight: "600",
+    },
+    menuSection: {
+      flex: 1,
+      paddingVertical: 8,
+    },
+    menuItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+    },
+    menuItemLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    menuItemText: {
+      fontSize: 16,
+      color: colors.text,
+      marginLeft: 12,
+    },
+    bottomSection: {
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    settingsButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+    },
+    settingsText: {
+      fontSize: 16,
+      color: colors.text,
+      marginLeft: 12,
+    },
+    premiumContainer: {
+      padding: 16,
+    },
+    premiumButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.secondary,
+      borderRadius: 24,
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+    },
+    premiumText: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: colors.activeText,
+      marginLeft: 8,
+    },
+  });
 const styles = StyleSheet.create({
   container: {
     position: "absolute",

@@ -9,11 +9,12 @@ const IP_CONFIGS = {
   HOME: "192.168.1.184",     // Mạng nhà
   HOTSPOT: "172.20.10.2",
   KHANHHOME:"192.168.1.22",
+  MinhanhHome:"192.168.1.11"  // iPhone hotspot
 };
 //VÍ DỤ : MUỐN ĐỔI IP THÌ THÊM IP VÀO ĐÂY
 
 // 👇 ĐỔI IP Ở ĐÂY - chỉ cần đổi key
-const CURRENT_IP = IP_CONFIGS.SCHOOL; // ← VÀ ĐỔI Ở ĐÂY LÀ XONG
+const CURRENT_IP = IP_CONFIGS.MinhanhHome; // ← VÀ ĐỔI Ở ĐÂY LÀ XONG
 const PORT = 9999;
 
 // 🧭 Xác định BASE_URL

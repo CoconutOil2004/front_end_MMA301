@@ -4,6 +4,7 @@ import Header from '../components/Header';
 import PostCard from '../components/PostCard';
 import CustomDrawer from '../components/navigation/DrawerContent';
 import { getPosts } from '../service';
+import { useTheme } from "../context/ThemeContext";
 import { AuthContext } from '../context/AuthContext'; // 👈 Import context
 
 export default function HomeScreen({ navigation }) {
@@ -16,7 +17,9 @@ export default function HomeScreen({ navigation }) {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  // Transform MongoDB post to PostCard format
+  const { theme } = useTheme(); // 2. Lấy theme
+  const styles = getStyles(theme.colors); // 3. Tạo styles
+
   const transformPost = (post) => {
     const postUserId = post.userId?._id || post.userId?.id;
     const currentUserId = user?._id || user?.id;
@@ -43,6 +46,7 @@ export default function HomeScreen({ navigation }) {
       tags: post.tags || [],
       status: post.status || 'open',
       contactPhone: post.contactPhone || '',
+      type: post.type, // Thêm type
     };
   };
 
@@ -191,13 +195,13 @@ export default function HomeScreen({ navigation }) {
     return (
       <View style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
-          <Header 
+          <Header
             onSearchPress={handleSearchPress}
             onMessagePress={handleMessagePress}
             onAvatarPress={handleAvatarPress}
           />
           <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color="#0A66C2" />
+            <ActivityIndicator size="large" color={theme.colors.primary} />
             <Text style={styles.loadingText}>Đang tải bài viết...</Text>
           </View>
         </SafeAreaView>
@@ -208,17 +212,22 @@ export default function HomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <Header 
+        <Header
           onSearchPress={handleSearchPress}
           onMessagePress={handleMessagePress}
           onAvatarPress={handleAvatarPress}
         />
 
-        <ScrollView 
-          style={styles.content} 
+        <ScrollView
+          style={styles.content}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[theme.colors.primary]}
+              tintColor={theme.colors.primary}
+            />
           }
           onScroll={({ nativeEvent }) => {
             const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
@@ -249,7 +258,7 @@ export default function HomeScreen({ navigation }) {
 
           {loading && posts.length > 0 && (
             <View style={styles.loadingMore}>
-              <ActivityIndicator size="small" color="#0A66C2" />
+              <ActivityIndicator size="small" color={theme.colors.primary} />
               <Text style={styles.loadingMoreText}>Đang tải thêm...</Text>
             </View>
           )}
@@ -267,78 +276,81 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F3F2EF',
-  },
-  safeArea: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-  },
-  centerContainer: {
-    flex: 1,
+// 4. Hàm styles động
+const getStyles = (colors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    safeArea: {
+      flex: 1,
+    },
+    content: {
+      flex: 1,
+    },
+    centerContainer: {
+      flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#666',
-  },
-  errorContainer: {
-    backgroundColor: '#FFF3CD',
-    padding: 16,
-    margin: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#FFE69C',
-  },
-  errorText: {
-    color: '#856404',
-    fontSize: 14,
+    backgroundColor: colors.background,
+    },
+    loadingText: {
+      marginTop: 12,
+      fontSize: 14,
+      color: colors.placeholder,
+    },
+    errorContainer: {
+      backgroundColor: colors.danger + "20",
+      padding: 16,
+      margin: 8,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.danger + "50",
+    },
+    errorText: {
+      color: colors.danger,
+      fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 4,
-  },
-  errorSubText: {
-    color: '#856404',
-    fontSize: 12,
+      marginBottom: 4,
+    },
+    errorSubText: {
+      color: colors.danger,
+      fontSize: 12,
     textAlign: 'center',
-  },
-  emptyContainer: {
-    padding: 40,
+    },
+    emptyContainer: {
+      padding: 40,
     alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
+    },
+    emptyText: {
+      fontSize: 16,
+      color: colors.text,
     fontWeight: '600',
-    marginBottom: 8,
-  },
-  emptySubText: {
-    fontSize: 14,
-    color: '#999',
-  },
-  loadingMore: {
+      marginBottom: 8,
+    },
+    emptySubText: {
+      fontSize: 14,
+      color: colors.placeholder,
+    },
+    loadingMore: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
-  },
-  loadingMoreText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#666',
-  },
-  endMessage: {
-    padding: 20,
+      padding: 16,
+    },
+    loadingMoreText: {
+      marginLeft: 8,
+      fontSize: 14,
+      color: colors.placeholder,
+    },
+    endMessage: {
+      padding: 20,
     alignItems: 'center',
-  },
-  endMessageText: {
-    fontSize: 14,
-    color: '#999',
-  },
-});
+    },
+    endMessageText: {
+      fontSize: 14,
+      color: colors.placeholder,
+    },
+  });

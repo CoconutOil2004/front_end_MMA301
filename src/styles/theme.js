@@ -1,30 +1,47 @@
+// src/styles/theme.js
+import { DefaultTheme, DarkTheme } from "@react-navigation/native";
+
+// 1. Định nghĩa các màu tùy chỉnh của bạn
+const customLightColors = {
+  background: "#FFFFFF",
+  text: "#1E293B",
+  card: "#FFFFFF",
+  border: "#E0E0E0",
+  primary: "#F97316",
+  success: "#22C55E",
+  danger: "#EF4444",
+  inputBg: "#F3F2EF",
+  placeholder: "#666666",
+  activeText: "#FFFFFF",
+  secondary: "#FDBA74",
+};
+
+const customDarkColors = {
+  background: "#121212",
+  text: "#F8FAFC",
+  card: "#1E1E1E",
+  border: "#3A3A3A",
+  primary: "#FB923C",
+  success: "#4ADE80",
+  danger: "#F87171",
+  inputBg: "#2C2C2C",
+  placeholder: "#A0A0A0",
+  activeText: "#121212",
+  secondary: "#FBBF24",
+};
+
+// 2. Tạo theme hoàn chỉnh
 export const LIGHT_THEME = {
+  ...DefaultTheme, // Kế thừa tất cả thuộc tính (fonts, roundness,...)
   colors: {
-    background: "#FFFFFF", // nền trắng sáng, gọn gàng
-    text: "#1E293B", // xám đậm, dễ đọc trên nền trắng
-    card: "#FFF7ED", // nền cam nhạt tạo cảm giác ấm áp
-    border: "#FCD34D", // vàng cam nhẹ, nổi bật nhưng không chói
-    primary: "#F97316", // cam FPT chủ đạo (#F97316 ≈ FPT Orange)
-    success: "#22C55E", // xanh lá - trạng thái “đã tìm thấy”
-    danger: "#EF4444", // đỏ cảnh báo
-    inputBg: "#FFF4E6", // ô nhập hơi ngà, dễ chịu cho mắt
-    placeholder: "#9CA3AF", // xám trung tính
-    activeText: "#111827", // chữ nổi bật
-    secondary: "#FDBA74", // màu phụ, dùng cho icon / nhấn nhẹ
+    ...DefaultTheme.colors, // Kế thừa màu mặc định
+    ...customLightColors, // Ghi đè bằng màu tùy chỉnh
   },
-};  
+};
 export const DARK_THEME = {
+  ...DarkTheme, // Kế thừa tất cả thuộc tính (fonts, roundness,...)
   colors: {
-    background: "#1E1B4B", // tím than đậm (ấm, tránh thuần đen)
-    text: "#F8FAFC", // chữ sáng nhẹ, dễ đọc
-    card: "#312E81", // nền thẻ tím đậm hơn một chút
-    border: "#4C1D95", // viền tím đậm, tạo khối rõ
-    primary: "#FB923C", // cam sáng (nút chính / điểm nhấn)
-    success: "#4ADE80", // xanh lá nổi bật trên nền tối
-    danger: "#F87171", // đỏ nhẹ cho cảnh báo
-    inputBg: "#272654", // ô nhập hơi sáng hơn nền
-    placeholder: "#A5B4FC", // tím nhạt nhẹ mắt
-    activeText: "#FFFFFF", // chữ đang active trắng sáng
-    secondary: "#FBBF24", // vàng cam điểm nhấn phụ
+    ...DarkTheme.colors, // Kế thừa màu mặc định
+    ...customDarkColors, // Ghi đè bằng màu tùy chỉnh
   },
 };
