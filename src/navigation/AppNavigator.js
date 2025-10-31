@@ -5,7 +5,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { AuthContext } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, View, Text } from "react-native";
 import { StatusBar } from "expo-status-bar";
 
 // Import các màn hình
@@ -20,11 +20,12 @@ import MessagesScreen from "../screens/MessagesScreen";
 import ChatDetailScreen from "../screens/ChatDetailScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import PostDetailScreen from "../screens/PostDetailScreen";
+import AdminReportsScreen from "../screens/AdminReportsScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
-function MainTabs() {
+function MainTabs({ role }) {
   const { theme } = useTheme();
 
   return (
@@ -40,9 +41,11 @@ function MainTabs() {
             iconName = focused ? "notifications" : "notifications-outline";
           else if (route.name === "Profile")
             iconName = focused ? "person" : "person-outline";
+          else if (route.name === "AdminReports")
+            iconName = focused ? "analytics" : "analytics-outline";
+
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        // 'placeholder' giờ đã tồn tại trong theme.colors
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.placeholder,
         headerShown: false,
@@ -53,12 +56,17 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
+      {role === "admin" && (
+        <Tab.Screen
+          name="AdminReports"
+          component={AdminReportsScreen}
+          options={{ tabBarLabel: "Reports" }}
+        />
+      )}
       <Tab.Screen
         name="CreatePost"
         component={CreatePostScreen}
-        options={{
-          tabBarLabel: "Tạo bài",
-        }}
+        options={{ tabBarLabel: "Tạo bài" }}
       />
       <Tab.Screen name="Notifications" component={NotificationsScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
@@ -66,11 +74,13 @@ function MainTabs() {
   );
 }
 
-// ✅ Stack chính khi đã đăng nhập
-function AppStack() {
+function AppStack({ role }) {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen name="MainTabs">
+        {(props) => <MainTabs {...props} role={role} />}
+      </Stack.Screen>
+
       <Stack.Screen name="Messages" component={MessagesScreen} />
       <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
@@ -80,7 +90,7 @@ function AppStack() {
   );
 }
 
-// ✅ Stack đăng nhập / đăng ký
+
 function AuthStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -91,10 +101,10 @@ function AuthStack() {
 }
 
 export default function AppNavigator() {
-  const { isLoggedIn, loading } = useContext(AuthContext);
-  const { theme,themeName } = useTheme(); // 1. Lấy theme đầy đủ từ context
+  const { isLoggedIn, loading, role } = useContext(AuthContext);
+  const { theme, themeName } = useTheme();
 
-  if (loading) {
+  if (loading || (isLoggedIn && !role)) {
     return (
       <View
         style={{
@@ -105,16 +115,23 @@ export default function AppNavigator() {
         }}
       >
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        <StatusBar style={themeName === 'dark' ? 'light' : 'dark'} />
+        <Text style={{ color: theme.colors.text, marginTop: 10 }}>
+          Đang tải thông tin người dùng...
+        </Text>
+        <StatusBar style={themeName === "dark" ? "light" : "dark"} />
       </View>
     );
   }
 
   return (
-    // 2. Truyền theme đầy đủ vào NavigationContainer
     <NavigationContainer theme={theme}>
-      <StatusBar style={themeName === 'dark' ? 'light' : 'dark'} />
-      {isLoggedIn ? <AppStack /> : <AuthStack />}
+      <StatusBar style={themeName === "dark" ? "light" : "dark"} />
+      {/* 👇 ép Navigation reload khi role đổi */}
+      {isLoggedIn ? (
+        <AppStack key={role || "user"} role={role} />
+      ) : (
+        <AuthStack />
+      )}
     </NavigationContainer>
   );
 }

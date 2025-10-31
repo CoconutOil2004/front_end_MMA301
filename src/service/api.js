@@ -5,16 +5,18 @@ import { Platform } from "react-native";
 
 // 🔧 CÁC IP BẠN HAY DÙNG (thêm/bớt tùy ý)
 const IP_CONFIGS = {
-  SCHOOL: "10.33.6.13",      // Mạng trường
-  HOME: "192.168.1.184",     // Mạng nhà
+  SCHOOL: "10.33.69.239", // Mạng trường
+  HOME: "192.168.1.184", // Mạng nhà
   HOTSPOT: "172.20.10.2",
-  KHANHHOME:"192.168.1.22",
-  MinhanhHome:"192.168.1.15"  // iPhone hotspot
+  KHANHHOME: "192.168.1.22",
+  MinhanhHome: "192.168.1.11", // iPhone hotspot
+  HungTran: "192.168.1.2",
+  QuanVHHome: "192.168.100.74",
 };
 //VÍ DỤ : MUỐN ĐỔI IP THÌ THÊM IP VÀO ĐÂY
 
 // 👇 ĐỔI IP Ở ĐÂY - chỉ cần đổi key
-const CURRENT_IP = IP_CONFIGS.MinhanhHome; // ← VÀ ĐỔI Ở ĐÂY LÀ XONG
+const CURRENT_IP = IP_CONFIGS.HungTran; // ← VÀ ĐỔI Ở ĐÂY LÀ XONG
 const PORT = 9999;
 
 // 🧭 Xác định BASE_URL
@@ -63,7 +65,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response) {
-      console.error("❌ API Error:", error.response.status, error.response.data);
+      console.error(
+        "❌ API Error:",
+        error.response.status,
+        error.response.data
+      );
     } else if (error.request) {
       console.error("⚠️ Không nhận được phản hồi từ server:", error.message);
     } else {

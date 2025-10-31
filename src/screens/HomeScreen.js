@@ -27,12 +27,11 @@ export default function HomeScreen({ navigation }) {
 
     return {
       id: post._id,
-      // ✅ Nếu là post của user hiện tại, dùng avatarUrl từ context
       avatar: isCurrentUserPost 
         ? (avatarUrl || user?.avatar || 'https://via.placeholder.com/50')
         : (post.userId?.avatar || 'https://via.placeholder.com/50'),
       name: post.userId?.name || 'Anonymous User',
-      userId: post.userId, // 👈 Thêm userId để PostCard có thể check
+      userId: post.userId, 
       degree: null,
       title: post.title || '',
       timeAgo: getTimeAgo(post.createdAt),

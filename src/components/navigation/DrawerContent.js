@@ -13,18 +13,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../../context/ThemeContext";
 import { AuthContext } from "../../context/AuthContext";
-import { DEFAULT_AVATAR } from "../../utils/constants"; // 👈 Import
-
+import { DEFAULT_AVATAR } from "../../utils/constants";
 const { width } = Dimensions.get("window");
 const DRAWER_WIDTH = 320;
-
 export default function DrawerContent({ isOpen, onClose }) {
   const translateX = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const navigation = useNavigation();
   const { theme } = useTheme();
   const styles = getStyles(theme.colors);
   const { user, avatarUrl } = useContext(AuthContext);
-
   useEffect(() => {
     Animated.timing(translateX, {
       toValue: isOpen ? 0 : -DRAWER_WIDTH,
@@ -37,33 +34,21 @@ export default function DrawerContent({ isOpen, onClose }) {
     onClose();
     navigation.navigate("Profile");
   };
-
-  // 1. Tạo hàm xử lý điều hướng cho Settings
   const handleNavigateToSettings = () => {
-    onClose(); // Đóng drawer
-    navigation.navigate("Settings"); // Điều hướng đến màn hình 'Settings'
+    onClose();
+    navigation.navigate("Settings");
   };
 
   if (!isOpen) return null;
-
-  // ✅ Dùng DEFAULT_AVATAR chung
   const displayAvatar = avatarUrl || user?.avatar || DEFAULT_AVATAR;
   const displayName = user?.name || "Người dùng";
-  const displayJobTitle = user?.headline || user?.jobTitle || "Software Engineer";
+  const displayJobTitle =
+    user?.headline || user?.jobTitle || "Software Engineer";
   const displayLocation = user?.location || "Hanoi, Vietnam";
   const displayCompany = user?.company || "FPT Software";
   const displayCompanyInitial = displayCompany.charAt(0).toUpperCase();
 
-  const menuItems = [
-    {
-      icon: "bar-chart-outline",
-      label: "View all analytics",
-      hasChevron: true,
-    },
-    { icon: "game-controller-outline", label: "Puzzle games" },
-    { icon: "bookmark-outline", label: "Saved posts" },
-    { icon: "people-outline", label: "Groups" },
-  ];
+  const menuItems = [{ icon: "bookmark-outline", label: "Saved posts" }];
 
   return (
     <View style={styles.container}>
@@ -88,10 +73,7 @@ export default function DrawerContent({ isOpen, onClose }) {
 
         <View style={styles.profileSection}>
           <TouchableOpacity onPress={handleNavigateToProfile}>
-            <Image
-              source={{ uri: displayAvatar }}
-              style={styles.avatar}
-            />
+            <Image source={{ uri: displayAvatar }} style={styles.avatar} />
           </TouchableOpacity>
 
           <TouchableOpacity onPress={handleNavigateToProfile}>
@@ -103,7 +85,9 @@ export default function DrawerContent({ isOpen, onClose }) {
 
           <View style={styles.companyBadge}>
             <View style={styles.companyIcon}>
-              <Text style={styles.companyIconText}>{displayCompanyInitial}</Text>
+              <Text style={styles.companyIconText}>
+                {displayCompanyInitial}
+              </Text>
             </View>
             <Text style={styles.companyName}>{displayCompany}</Text>
           </View>
@@ -111,7 +95,8 @@ export default function DrawerContent({ isOpen, onClose }) {
 
         <View style={styles.profileViews}>
           <Text style={styles.viewsText}>
-            <Text style={styles.viewsNumber}>{user?.profileViews || 13}</Text> profile viewers
+            <Text style={styles.viewsNumber}>{user?.profileViews || 13}</Text>{" "}
+            profile viewers
           </Text>
         </View>
 
@@ -157,7 +142,11 @@ export default function DrawerContent({ isOpen, onClose }) {
 
           <View style={styles.premiumContainer}>
             <TouchableOpacity style={styles.premiumButton}>
-              <Ionicons name="ribbon-outline" size={20} color={theme.colors.activeText} />
+              <Ionicons
+                name="ribbon-outline"
+                size={20}
+                color={theme.colors.activeText}
+              />
               <Text style={styles.premiumText}>Try Premium for đ0</Text>
             </TouchableOpacity>
           </View>
@@ -239,7 +228,7 @@ const getStyles = (colors) =>
     companyIcon: {
       width: 24,
       height: 24,
-    backgroundColor: "#0A66C2", // LinkedIn blue
+      backgroundColor: "#0A66C2", // LinkedIn blue
       borderRadius: 4,
       justifyContent: "center",
       alignItems: "center",
