@@ -82,7 +82,7 @@ const getStyles = (colors) =>
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: 12,
-      paddingVertical: 8,
+      paddingVertical: 12,
     },
     avatar: {
       marginRight: 8,

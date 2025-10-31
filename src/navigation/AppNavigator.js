@@ -17,6 +17,7 @@ import RegisterScreen from "../screens/RegisterScreen";
 import MessagesScreen from "../screens/MessagesScreen";
 import ChatDetailScreen from "../screens/ChatDetailScreen";
 import SettingsScreen from "../screens/SettingsScreen";
+import PostDetailScreen from "../screens/PostDetailScreen";
 import { ActivityIndicator, View } from "react-native";
 
 const Tab = createBottomTabNavigator();
@@ -73,6 +74,7 @@ function AppStack() {
       <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="Search" component={SearchScreen} />
+      <Stack.Screen name="PostDetail" component={PostDetailScreen} />
     </Stack.Navigator>
   );
 }
