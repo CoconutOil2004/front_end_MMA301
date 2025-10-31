@@ -5,6 +5,8 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { AuthContext } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import { ActivityIndicator, View } from "react-native";
+import { StatusBar } from "expo-status-bar";
 
 // Import các màn hình
 import HomeScreen from "../screens/HomeScreen";
@@ -18,7 +20,6 @@ import MessagesScreen from "../screens/MessagesScreen";
 import ChatDetailScreen from "../screens/ChatDetailScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import PostDetailScreen from "../screens/PostDetailScreen";
-import { ActivityIndicator, View } from "react-native";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -91,7 +92,7 @@ function AuthStack() {
 
 export default function AppNavigator() {
   const { isLoggedIn, loading } = useContext(AuthContext);
-  const { theme } = useTheme(); // 1. Lấy theme đầy đủ từ context
+  const { theme,themeName } = useTheme(); // 1. Lấy theme đầy đủ từ context
 
   if (loading) {
     return (
@@ -104,6 +105,7 @@ export default function AppNavigator() {
         }}
       >
         <ActivityIndicator size="large" color={theme.colors.primary} />
+        <StatusBar style={themeName === 'dark' ? 'light' : 'dark'} />
       </View>
     );
   }
@@ -111,6 +113,7 @@ export default function AppNavigator() {
   return (
     // 2. Truyền theme đầy đủ vào NavigationContainer
     <NavigationContainer theme={theme}>
+      <StatusBar style={themeName === 'dark' ? 'light' : 'dark'} />
       {isLoggedIn ? <AppStack /> : <AuthStack />}
     </NavigationContainer>
   );
