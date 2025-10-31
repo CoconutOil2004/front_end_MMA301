@@ -11,6 +11,7 @@ const IP_CONFIGS = {
   KHANHHOME: "192.168.1.22",
   MinhanhHome: "192.168.1.11", // iPhone hotspot
   HungTran: "192.168.1.2",
+  QuanVHHome: "192.168.100.74",
 };
 //VÍ DỤ : MUỐN ĐỔI IP THÌ THÊM IP VÀO ĐÂY
 
