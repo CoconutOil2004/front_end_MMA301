@@ -1,8 +1,8 @@
 import api from "./api";
 
 // ---- CONVERSATION ----
-export const createOrGetConversation = async (senderId, receiverId) => {
-  const res = await api.post("/conversations", { senderId, receiverId });
+export const createOrGetConversation = async (data) => {
+  const res = await api.post("/conversations", data);
   return res.data;
 };
 

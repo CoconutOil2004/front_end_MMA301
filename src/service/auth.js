@@ -47,3 +47,7 @@ export const forgotPassword = async (data) => {
   const res = await api.post("/users/forgot-password", data);
   return res.data;
 };
+export const searchUsers = async (query) => {
+  const res = await api.get(`/users/search?q=${query}`);
+  return res.data;
+};
