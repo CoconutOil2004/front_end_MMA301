@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Image,
   Alert,
+  SafeAreaView,
 } from "react-native";
 import { useTheme } from "../context/ThemeContext";
 import { getAllReports, approveReport, rejectReport } from "../service";
@@ -20,9 +21,11 @@ export default function AdminReportsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadReports = async () => {
+  const loadReports = async ({ showLoading = false } = {}) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
       const data = await getAllReports();
       const list = Array.isArray(data) ? data : data.reports || [];
       setReports(list);
@@ -30,13 +33,15 @@ export default function AdminReportsScreen() {
       console.error("❌ Lỗi tải báo cáo:", error.message);
       Alert.alert("Lỗi", "Không thể tải danh sách báo cáo.");
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
       setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    loadReports();
+    loadReports({ showLoading: true });
   }, []);
 
   const handleApprove = async (id) => {
@@ -146,19 +151,7 @@ export default function AdminReportsScreen() {
     );
 
   return (
-    <>
-      <View style={styles.refreshContainer}>
-        <TouchableOpacity
-          style={[styles.refreshButton, { backgroundColor: theme.colors.primary }]}
-          onPress={() => {
-            setRefreshing(true);
-            loadReports();
-          }}
-        >
-          <Text style={styles.btnText}>Làm mới</Text>
-        </TouchableOpacity>
-      </View>
-
+    <SafeAreaView style={styles.safeArea}>
       <FlatList
         data={reports}
         keyExtractor={(item) => item._id}
@@ -170,7 +163,10 @@ export default function AdminReportsScreen() {
             colors={[theme.colors.primary]}
           />
         }
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={{
+          padding: 16,
+          flexGrow: reports.length === 0 ? 1 : 0,
+        }}
         ListEmptyComponent={
           <View style={styles.center}>
             <Text style={{ color: theme.colors.placeholder }}>
@@ -179,12 +175,16 @@ export default function AdminReportsScreen() {
           </View>
         }
       />
-    </>
+    </SafeAreaView>
   );
 }
 
 const getStyles = (colors) =>
   StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
     center: {
       flex: 1,
       justifyContent: "center",
@@ -260,15 +260,5 @@ const getStyles = (colors) =>
     btnText: {
       color: "#fff",
       fontWeight: "600",
-    },
-    refreshContainer: {
-      paddingHorizontal: 16,
-      paddingTop: 16,
-    },
-    refreshButton: {
-      alignSelf: "flex-end",
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      borderRadius: 8,
     },
   });

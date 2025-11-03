@@ -1,13 +1,25 @@
-import React, { useContext } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
+import React, { useContext, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AuthContext } from "../context/AuthContext";
 import { DEFAULT_AVATAR } from "../utils/constants";
 import { useTheme } from "../context/ThemeContext";
+import { useNavigation } from "@react-navigation/native";
+import { createOrGetConversation } from "../service";
 export default function PostCard({ post }) {
   const { user, avatarUrl } = useContext(AuthContext);
   const { theme } = useTheme();
   const styles = getStyles(theme.colors);
+  const navigation = useNavigation();
+  const [startingChat, setStartingChat] = useState(false);
   const postUserId = post.userId?._id || post.userId?.id || post.userId;
   const currentUserId = user?._id || user?.id;
   const defaultAvatarUri = DEFAULT_AVATAR || "https://via.placeholder.com/48";
@@ -29,6 +41,56 @@ export default function PostCard({ post }) {
   const likesCount = post.likes?.length || 0;
   const status = post.status || "open";
   const contactPhone = post.contactPhone || "";
+
+  const handleSendPress = async () => {
+    if (startingChat) return;
+
+    if (!currentUserId) {
+      Alert.alert("Bạn cần đăng nhập", "Đăng nhập để nhắn tin với người đăng bài.");
+      return;
+    }
+
+    if (!postUserId) {
+      Alert.alert("Không tìm thấy người nhận", "Bài viết chưa có thông tin người đăng.");
+      return;
+    }
+
+    if (postUserId === currentUserId) {
+      Alert.alert("Thông báo", "Bạn không thể nhắn tin với chính mình.");
+      return;
+    }
+
+    try {
+      setStartingChat(true);
+      const conversation = await createOrGetConversation(currentUserId, postUserId);
+      if (!conversation?._id) {
+        throw new Error("Conversation response missing id");
+      }
+
+      const receiverFromConversation = conversation.participants?.find(
+        (participant) => participant?._id && participant._id !== currentUserId
+      );
+
+      const receiver =
+        receiverFromConversation ||
+        (typeof post.userId === "object" && post.userId) ||
+        {
+          _id: postUserId,
+          name,
+          avatar,
+        };
+
+      navigation.navigate("ChatDetail", {
+        conversationId: conversation._id,
+        receiver,
+      });
+    } catch (error) {
+      console.error("Error starting conversation:", error);
+      Alert.alert("Không thể mở đoạn chat", "Vui lòng thử lại sau.");
+    } finally {
+      setStartingChat(false);
+    }
+  };
 
   const getPostTypeDisplay = () => {
     const type = post.type || "lost";
@@ -155,13 +217,28 @@ export default function PostCard({ post }) {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerButton}>
-          <Ionicons
-            name="paper-plane-outline"
-            size={20}
-            color={theme.colors.placeholder}
-          />
-          <Text style={styles.footerButtonText}>Send</Text>
+        <TouchableOpacity
+          style={styles.footerButton}
+          onPress={handleSendPress}
+          disabled={startingChat}
+        >
+          {startingChat ? (
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+          ) : (
+            <Ionicons
+              name="paper-plane-outline"
+              size={20}
+              color={theme.colors.placeholder}
+            />
+          )}
+          <Text
+            style={[
+              styles.footerButtonText,
+              startingChat && styles.footerButtonTextDisabled,
+            ]}
+          >
+            {startingChat ? "Đang mở" : "Send"}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -343,6 +420,10 @@ const getStyles = (colors) =>
       fontSize: 14,
       color: colors.placeholder,
       marginLeft: 6, // Tăng khoảng cách
+    },
+    footerButtonTextDisabled: {
+      color: colors.placeholder,
+      opacity: 0.7,
     },
     footerButtonTextActive: {
       color: colors.primary,
