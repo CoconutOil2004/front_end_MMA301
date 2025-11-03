@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -42,6 +42,16 @@ export default function PostCard({ post }) {
   const status = post.status || "open";
   const contactPhone = post.contactPhone || "";
 
+  const postOwner = useMemo(
+    () => ({
+      _id: postUserId,
+      name,
+      avatar,
+      phone: contactPhone,
+    }),
+    [avatar, contactPhone, name, postUserId]
+  );
+
   const handleSendPress = async () => {
     if (startingChat) return;
 
@@ -68,21 +78,33 @@ export default function PostCard({ post }) {
       }
 
       const receiverFromConversation = conversation.participants?.find(
-        (participant) => participant?._id && participant._id !== currentUserId
+        (participant) => {
+          const participantId = participant?._id || participant;
+          return participantId && participantId !== currentUserId;
+        }
       );
 
-      const receiver =
-        receiverFromConversation ||
-        (typeof post.userId === "object" && post.userId) ||
-        {
-          _id: postUserId,
-          name,
-          avatar,
-        };
+      const receiver = receiverFromConversation
+        ? {
+            _id: receiverFromConversation._id || receiverFromConversation,
+            name: receiverFromConversation.name || postOwner.name,
+            avatar: receiverFromConversation.avatar || postOwner.avatar,
+            phone: receiverFromConversation.phone || postOwner.phone,
+          }
+        : (typeof post.userId === "object" && {
+            _id: post.userId._id || post.userId.id,
+            name: post.userId.name || postOwner.name,
+            avatar: post.userId.avatar || postOwner.avatar,
+            phone: post.userId.phone || postOwner.phone,
+          }) || postOwner;
 
       navigation.navigate("ChatDetail", {
         conversationId: conversation._id,
         receiver,
+        originPost: {
+          id: post.id || post._id || conversation._id,
+          title,
+        },
       });
     } catch (error) {
       console.error("Error starting conversation:", error);
