@@ -1,25 +1,31 @@
 import React, { useContext, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Linking, Modal, TextInput, KeyboardAvoidingView, Platform, SafeAreaView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AuthContext } from "../context/AuthContext";
 import { DEFAULT_AVATAR } from "../utils/constants";
 import { useTheme } from "../context/ThemeContext";
-import { useNavigation } from "@react-navigation/native";
-import { createOrGetConversation } from "../service";
-export default function PostCard({ post }) {
+import { likePost } from "../service/posts";
+import { createReport } from "../service/reports";
+
+export default function PostCard({ post, onPostUpdate }) {
   const { user, avatarUrl } = useContext(AuthContext);
   const { theme } = useTheme();
   const styles = getStyles(theme.colors);
-  const navigation = useNavigation();
-  const [startingChat, setStartingChat] = useState(false);
+  
+  // State để quản lý like
+  const [isLiked, setIsLiked] = useState(
+    post.likes?.some(like => 
+      (like._id || like.id || like) === (user?._id || user?.id)
+    ) || false
+  );
+  const [likesCount, setLikesCount] = useState(post.likes?.length || 0);
+  const [isLiking, setIsLiking] = useState(false);
+
+  // State cho Report Modal
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+
   const postUserId = post.userId?._id || post.userId?.id || post.userId;
   const currentUserId = user?._id || user?.id;
   const defaultAvatarUri = DEFAULT_AVATAR || "https://via.placeholder.com/48";
@@ -37,58 +43,92 @@ export default function PostCard({ post }) {
   const showTranslation = post.showTranslation || false;
   const image = post.image || post.imageUrl || null;
   const hasHD = post.hasHD || false;
-  const isFollowing = post.isFollowing || false;
-  const likesCount = post.likes?.length || 0;
   const status = post.status || "open";
   const contactPhone = post.contactPhone || "";
 
-  const handleSendPress = async () => {
-    if (startingChat) return;
+  // Xử lý like/unlike
+  const handleLike = async () => {
+    if (isLiking) return;
+    
+    try {
+      setIsLiking(true);
+      const newIsLiked = !isLiked;
+      const newLikesCount = newIsLiked ? likesCount + 1 : likesCount - 1;
+      
+      setIsLiked(newIsLiked);
+      setLikesCount(newLikesCount);
 
-    if (!currentUserId) {
-      Alert.alert("Bạn cần đăng nhập", "Đăng nhập để nhắn tin với người đăng bài.");
+      const postId = post._id || post.id;
+      const response = await likePost(postId);
+      
+      if (response.success && response.data) {
+        setLikesCount(response.data.likes?.length || newLikesCount);
+        setIsLiked(response.data.likes?.some(like => 
+          (like._id || like.id || like) === currentUserId
+        ) || newIsLiked);
+      }
+
+      if (onPostUpdate) {
+        onPostUpdate(response.data);
+      }
+      
+    } catch (error) {
+      console.error("Error liking post:", error);
+      setIsLiked(!isLiked);
+      setLikesCount(likesCount);
+      Alert.alert("Lỗi", error.response?.data?.message || "Không thể thực hiện. Vui lòng thử lại!");
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
+  // Xử lý gọi điện thoại
+  const handleContactPress = () => {
+    if (!contactPhone) {
+      Alert.alert("Thông báo", "Không có số điện thoại");
       return;
     }
 
-    if (!postUserId) {
-      Alert.alert("Không tìm thấy người nhận", "Bài viết chưa có thông tin người đăng.");
-      return;
-    }
+    Linking.openURL(`tel:${contactPhone}`).catch(err => {
+      console.error("Error opening phone app:", err);
+      Alert.alert('Lỗi', 'Không thể mở ứng dụng gọi điện');
+    });
+  };
 
-    if (postUserId === currentUserId) {
-      Alert.alert("Thông báo", "Bạn không thể nhắn tin với chính mình.");
+  // Xử lý gửi báo cáo
+  const handleSubmitReport = async () => {
+    if (isSubmittingReport) return;
+
+    if (!reportReason.trim()) {
+      Alert.alert("Thông báo", "Vui lòng nhập lý do báo cáo");
       return;
     }
 
     try {
-      setStartingChat(true);
-      const conversation = await createOrGetConversation(currentUserId, postUserId);
-      if (!conversation?._id) {
-        throw new Error("Conversation response missing id");
+      setIsSubmittingReport(true);
+      
+      const reportData = {
+        reporterId: currentUserId,
+        postId: post._id || post.id,
+        reason: reportReason.trim(),
+      };
+
+      const response = await createReport(reportData);
+      
+      if (response.message) {
+        Alert.alert("Thành công", "Đã gửi báo cáo thành công!");
+        setShowReportModal(false);
+        setReportReason(""); // Reset input
       }
-
-      const receiverFromConversation = conversation.participants?.find(
-        (participant) => participant?._id && participant._id !== currentUserId
-      );
-
-      const receiver =
-        receiverFromConversation ||
-        (typeof post.userId === "object" && post.userId) ||
-        {
-          _id: postUserId,
-          name,
-          avatar,
-        };
-
-      navigation.navigate("ChatDetail", {
-        conversationId: conversation._id,
-        receiver,
-      });
+      
     } catch (error) {
-      console.error("Error starting conversation:", error);
-      Alert.alert("Không thể mở đoạn chat", "Vui lòng thử lại sau.");
+      console.error("Error submitting report:", error);
+      Alert.alert(
+        "Lỗi", 
+        error.response?.data?.message || "Không thể gửi báo cáo. Vui lòng thử lại!"
+      );
     } finally {
-      setStartingChat(false);
+      setIsSubmittingReport(false);
     }
   };
 
@@ -101,6 +141,7 @@ export default function PostCard({ post }) {
     };
     return typeMap[type] || typeMap["lost"];
   };
+
   const getStatusBadge = () => {
     if (status === "closed") {
       return (
@@ -111,8 +152,10 @@ export default function PostCard({ post }) {
     }
     return null;
   };
+
   return (
     <View style={styles.postCard}>
+      {/* Post Header */}
       <View style={styles.postHeader}>
         <Image
           source={{ uri: avatar }}
@@ -143,7 +186,10 @@ export default function PostCard({ post }) {
           </View>
         </View>
         <View style={styles.postActions}>
-          <TouchableOpacity style={styles.followButton}>
+          <TouchableOpacity 
+            style={styles.followButton}
+            onPress={handleContactPress}
+          >
             <Ionicons
               name="call-outline"
               size={18}
@@ -151,7 +197,10 @@ export default function PostCard({ post }) {
             />
             <Text style={styles.followText}>Contact</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.moreButton}>
+          <TouchableOpacity 
+            style={styles.moreButton}
+            onPress={() => setShowReportModal(true)}
+          >
             <Ionicons
               name="ellipsis-horizontal"
               size={20}
@@ -160,23 +209,16 @@ export default function PostCard({ post }) {
           </TouchableOpacity>
         </View>
       </View>
+
       {getStatusBadge()}
       <Text style={styles.postContent}>{content}</Text>
-      {contactPhone ? (
-        <View style={styles.contactInfo}>
-          <Ionicons
-            name="call-outline"
-            size={14}
-            color={theme.colors.primary}
-          />
-          <Text style={styles.contactPhone}>{contactPhone}</Text>
-        </View>
-      ) : null}
+      
       {showTranslation && (
         <TouchableOpacity style={styles.translationButton}>
           <Text style={styles.translationText}>Show translation</Text>
         </TouchableOpacity>
       )}
+      
       {image && (
         <View style={styles.postImageContainer}>
           <Image
@@ -184,12 +226,8 @@ export default function PostCard({ post }) {
             style={styles.postImage}
             resizeMode="cover"
             onError={(e) =>
-              console.log(
-                "Error loading post image:",
-                image,
-                e.nativeEvent.error
-              )
-            } // Debug lỗi ảnh
+              console.log("Error loading post image:", image, e.nativeEvent.error)
+            }
           />
           {hasHD && (
             <View style={styles.hdBadge}>
@@ -198,19 +236,23 @@ export default function PostCard({ post }) {
           )}
         </View>
       )}
+
+      {/* Post Footer */}
       <View style={styles.postFooter}>
-        <TouchableOpacity style={styles.footerButton}>
+        <TouchableOpacity 
+          style={styles.footerButton}
+          onPress={handleLike}
+          disabled={isLiking}
+        >
           <Ionicons
-            name={likesCount > 0 ? "thumbs-up" : "thumbs-up-outline"}
+            name={isLiked ? "thumbs-up" : "thumbs-up-outline"}
             size={20}
-            color={
-              likesCount > 0 ? theme.colors.primary : theme.colors.placeholder
-            }
+            color={isLiked ? theme.colors.primary : theme.colors.placeholder}
           />
           <Text
             style={[
               styles.footerButtonText,
-              likesCount > 0 && styles.footerButtonTextActive,
+              isLiked && styles.footerButtonTextActive,
             ]}
           >
             Like {likesCount > 0 ? `(${likesCount})` : ""}
@@ -241,6 +283,88 @@ export default function PostCard({ post }) {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Report Modal */}
+      <Modal
+        visible={showReportModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setShowReportModal(false);
+          setReportReason("");
+        }}
+      >
+        <SafeAreaView style={styles.modalSafeArea}>
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.modalOverlay}
+          >
+            <TouchableOpacity 
+              style={styles.modalBackdrop}
+              activeOpacity={1}
+              onPress={() => {
+                setShowReportModal(false);
+                setReportReason("");
+              }}
+            />
+            <View style={styles.modalContent}>
+              {/* Modal Header */}
+              <View style={styles.modalHeader}>
+                <View style={styles.modalHandle} />
+                <Text style={styles.modalTitle}>Báo cáo bài viết</Text>
+                <Text style={styles.modalSubtitle}>
+                  Vui lòng cho chúng tôi biết lý do bạn muốn báo cáo bài viết này
+                </Text>
+              </View>
+
+              {/* Input Reason */}
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Nhập lý do báo cáo..."
+                  placeholderTextColor={theme.colors.placeholder}
+                  value={reportReason}
+                  onChangeText={setReportReason}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                  maxLength={500}
+                />
+                <Text style={styles.characterCount}>{reportReason.length}/500</Text>
+              </View>
+
+              {/* Action Buttons */}
+              <View style={styles.modalActions}>
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.cancelButton]}
+                  onPress={() => {
+                    setShowReportModal(false);
+                    setReportReason("");
+                  }}
+                >
+                  <Text style={styles.cancelButtonText}>Hủy</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[
+                    styles.actionButton, 
+                    styles.submitButton,
+                    (!reportReason.trim() || isSubmittingReport) && styles.submitButtonDisabled
+                  ]}
+                  onPress={handleSubmitReport}
+                  disabled={!reportReason.trim() || isSubmittingReport}
+                >
+                  {isSubmittingReport ? (
+                    <Text style={styles.submitButtonText}>Đang gửi...</Text>
+                  ) : (
+                    <Text style={styles.submitButtonText}>Gửi báo cáo</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </Modal>
     </View>
   );
 }
@@ -268,69 +392,69 @@ const getStyles = (colors) =>
     },
     postInfo: {
       flex: 1,
-      marginLeft: 12, // Tăng khoảng cách
+      marginLeft: 12,
     },
     postNameRow: {
       flexDirection: "row",
       alignItems: "center",
     },
     postName: {
-      fontSize: 15, // Tăng cỡ chữ
+      fontSize: 15,
       fontWeight: "600",
       color: colors.text,
     },
     postDegree: {
-      fontSize: 13, // Tăng cỡ chữ
+      fontSize: 13,
       color: colors.placeholder,
       marginLeft: 4,
     },
     titleRow: {
       flexDirection: "row",
       alignItems: "center",
-      marginTop: 3, // Tăng khoảng cách
+      marginTop: 3,
     },
     postType: {
-      fontSize: 13, // Tăng cỡ chữ
+      fontSize: 13,
       fontWeight: "600",
       color: colors.primary,
     },
     postTitle: {
-      fontSize: 13, // Tăng cỡ chữ
+      fontSize: 13,
       color: colors.placeholder,
       marginLeft: 4,
-      flexShrink: 1, // Cho phép text co lại nếu quá dài
+      flexShrink: 1,
     },
     postMeta: {
       flexDirection: "row",
       alignItems: "center",
-      marginTop: 5, // Tăng khoảng cách
+      marginTop: 5,
     },
     postTime: {
-      fontSize: 13, // Tăng cỡ chữ
+      fontSize: 13,
       color: colors.placeholder,
     },
     postActions: {
-      marginLeft: "auto", // Đẩy nút sang phải
+      marginLeft: "auto",
       alignItems: "flex-end",
     },
     followButton: {
       flexDirection: "row",
       alignItems: "center",
-      paddingVertical: 4, // Thêm padding cho dễ bấm
+      paddingVertical: 4,
       paddingHorizontal: 8,
       borderRadius: 15,
       borderWidth: 1,
       borderColor: colors.primary,
-      marginBottom: 8, // Giảm khoảng cách dưới
+      marginBottom: 8,
     },
     followText: {
-      fontSize: 13, // Giảm cỡ chữ
+      fontSize: 13,
       fontWeight: "600",
       color: colors.primary,
       marginLeft: 4,
     },
     moreButton: {
-      padding: 4, // Tăng vùng bấm
+      padding: 4,
     },
     statusBadge: {
       backgroundColor: colors.success + "30",
@@ -338,7 +462,7 @@ const getStyles = (colors) =>
       paddingVertical: 6,
       borderRadius: 16,
       alignSelf: "flex-start",
-      marginBottom: 10, // Tăng khoảng cách
+      marginBottom: 10,
     },
     statusText: {
       fontSize: 12,
@@ -346,28 +470,10 @@ const getStyles = (colors) =>
       color: colors.success,
     },
     postContent: {
-      fontSize: 15, // Tăng cỡ chữ
+      fontSize: 15,
       color: colors.text,
-      lineHeight: 22, // Tăng khoảng cách dòng
-      marginBottom: 10, // Tăng khoảng cách
-    },
-    contactInfo: {
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: colors.primary + "15", // Giảm độ đậm nền
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      borderRadius: 8,
-      marginBottom: 10, // Tăng khoảng cách
-      borderWidth: 1,
-      borderColor: colors.primary + "40", // Giảm độ đậm viền
-      alignSelf: "flex-start", // Chỉ rộng bằng nội dung
-    },
-    contactPhone: {
-      fontSize: 14,
-      fontWeight: "600",
-      color: colors.primary,
-      marginLeft: 6,
+      lineHeight: 22,
+      marginBottom: 10,
     },
     translationButton: {
       alignSelf: "flex-start",
@@ -383,12 +489,11 @@ const getStyles = (colors) =>
       borderRadius: 8,
       overflow: "hidden",
       marginBottom: 12,
-      backgroundColor: colors.inputBg, // Thêm màu nền
+      backgroundColor: colors.inputBg,
     },
     postImage: {
       width: "100%",
-      aspectRatio: 16 / 9, // Tỉ lệ phổ biến hơn
-      // height: 400, // Bỏ height cố định, dùng aspectRatio
+      aspectRatio: 16 / 9,
     },
     hdBadge: {
       position: "absolute",
@@ -414,12 +519,12 @@ const getStyles = (colors) =>
     footerButton: {
       flexDirection: "row",
       alignItems: "center",
-      paddingVertical: 4, // Thêm padding cho dễ bấm
+      paddingVertical: 4,
     },
     footerButtonText: {
       fontSize: 14,
       color: colors.placeholder,
-      marginLeft: 6, // Tăng khoảng cách
+      marginLeft: 6,
     },
     footerButtonTextDisabled: {
       color: colors.placeholder,
@@ -428,5 +533,102 @@ const getStyles = (colors) =>
     footerButtonTextActive: {
       color: colors.primary,
       fontWeight: "600",
+    },
+    // Modal Styles
+    modalSafeArea: {
+      flex: 1,
+      backgroundColor: "transparent",
+    },
+    modalOverlay: {
+      flex: 1,
+      justifyContent: "flex-end",
+    },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+    },
+    modalContent: {
+      backgroundColor: colors.card,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      paddingBottom: 20,
+    },
+    modalHeader: {
+      padding: 20,
+      paddingBottom: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      alignItems: "center",
+    },
+    modalHandle: {
+      width: 40,
+      height: 4,
+      backgroundColor: colors.placeholder,
+      borderRadius: 2,
+      marginBottom: 16,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: colors.text,
+      marginBottom: 8,
+    },
+    modalSubtitle: {
+      fontSize: 14,
+      color: colors.placeholder,
+      textAlign: "center",
+      lineHeight: 20,
+    },
+    inputContainer: {
+      padding: 20,
+    },
+    textInput: {
+      backgroundColor: colors.inputBg,
+      borderRadius: 12,
+      padding: 16,
+      fontSize: 15,
+      color: colors.text,
+      minHeight: 120,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    characterCount: {
+      fontSize: 12,
+      color: colors.placeholder,
+      textAlign: "right",
+      marginTop: 8,
+    },
+    modalActions: {
+      flexDirection: "row",
+      paddingHorizontal: 20,
+      gap: 12,
+    },
+    actionButton: {
+      flex: 1,
+      paddingVertical: 14,
+      borderRadius: 10,
+      alignItems: "center",
+    },
+    cancelButton: {
+      backgroundColor: colors.inputBg,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    cancelButtonText: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: colors.text,
+    },
+    submitButton: {
+      backgroundColor: colors.primary,
+    },
+    submitButtonDisabled: {
+      backgroundColor: colors.placeholder,
+      opacity: 0.5,
+    },
+    submitButtonText: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: "#fff",
     },
   });

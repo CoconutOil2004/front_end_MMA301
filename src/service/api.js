@@ -16,7 +16,7 @@ const IP_CONFIGS = {
 //VÍ DỤ : MUỐN ĐỔI IP THÌ THÊM IP VÀO ĐÂY
 
 // 👇 ĐỔI IP Ở ĐÂY - chỉ cần đổi key
-const CURRENT_IP = IP_CONFIGS.SCHOOL; // ← VÀ ĐỔI Ở ĐÂY LÀ XONG
+const CURRENT_IP = IP_CONFIGS.KHANHHOME; // ← VÀ ĐỔI Ở ĐÂY LÀ XONG
 const PORT = 9999;
 
 // 🧭 Xác định BASE_URL
