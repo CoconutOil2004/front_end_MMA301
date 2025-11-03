@@ -13,6 +13,13 @@ export const loginUser = async (data) => {
   return res.data;
 };
 
+// ---- CHANGE PASSWORD ----
+export const changePassword = async (data) => {
+  // data = { oldPassword, newPassword }
+  const res = await api.put("/users/change-pass", data);
+  return res.data;
+};
+
 // ---- GET PROFILE ----
 export const getProfile = async () => {
   const res = await api.get("/users/profile");
@@ -23,6 +30,10 @@ export const getProfile = async () => {
 export const updateAvatar = async (avatarUrl) => {
   const res = await api.patch("/users/update-avatar", { avatar: avatarUrl });
   return res.data;
+};
+export const updateUserProfile = async (data) => {
+  const res = await api.put("/users/update", data);
+  return res.data; 
 };
 
 // ---- LOGOUT ----

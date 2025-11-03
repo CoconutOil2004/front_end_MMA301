@@ -1,5 +1,5 @@
 // src/screens/SettingsScreen.js
-import React, { useContext } from "react"; // Thêm useContext
+import React, { useContext } from "react";
 import {
   View,
   Text,
@@ -8,98 +8,37 @@ import {
   ScrollView,
   SafeAreaView,
   Switch,
-  Alert, // Thêm Alert
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../context/ThemeContext";
 import { AuthContext } from "../context/AuthContext";
 
-// Các mục cài đặt (giữ ở ngoài)
-const settingsOptions = [
-  {
-    title: "Account",
-    icon: "person-circle-outline",
-    items: [
-      { label: "Sign-in & security", screen: "SignInSecurity" },
-      { label: "Account preferences", screen: "AccountPreferences" },
-    ],
-  },
-  {
-    title: "Privacy",
-    icon: "lock-closed-outline",
-    items: [
-      { label: "Edit your public profile", screen: "EditPublicProfile" },
-      { label: "Who can see your activity", screen: "ActivityVisibility" },
-      { label: "Data privacy", screen: "DataPrivacy" },
-    ],
-  },
-  {
-    title: "Notifications",
-    icon: "notifications-outline",
-    items: [
-      { label: "On App", screen: "AppNotifications" },
-      { label: "Email", screen: "EmailNotifications" },
-      { label: "Push", screen: "PushNotifications" },
-    ],
-  },
-];
-
 export default function SettingsScreen() {
   const navigation = useNavigation();
   const { theme, toggleTheme, isDark } = useTheme();
-  const { logout } = useContext(AuthContext); // Sửa: dùng useContext
-
-  // --- SỬA LỖI ---
-  // 1. Định nghĩa `styles` ở đây, TRƯỚC khi dùng
-  const styles = getStyles(theme.colors);
-
-  // 2. Di chuyển các component con vào BÊN TRONG SettingsScreen
-  // Giờ chúng có thể thấy biến `styles`
-  const SettingsItem = ({ label, onPress }) => (
-    <TouchableOpacity
-      // 3. Sửa cách gọi: styles.itemContainer là object, không phải function
-      style={[
-        styles.itemContainer,
-        { marginLeft: 16 },
-      ]}
-      onPress={onPress}
-    >
-      <Text style={styles.itemText}>{label}</Text>
-      <Ionicons
-        name="chevron-forward-outline"
-        size={20}
-        color={theme.colors.placeholder}
-      />
-    </TouchableOpacity>
-  );
-
-  const SettingsSection = ({ title, icon, items }) => (
-    <View style={styles.sectionContainer}>
-      <View style={styles.sectionHeader}>
-        <Ionicons name={icon} size={22} color={theme.colors.text} />
-        <Text style={styles.sectionTitle}>{title}</Text>
-      </View>
-      {items.map((item) => (
-        <SettingsItem
-          key={item.label}
-          label={item.label}
-          onPress={() => {
-            console.log(`Maps to ${item.screen}`);
-          }}
-        />
-      ))}
-    </View>
-  );
-  // --- KẾT THÚC SỬA LỖI ---
+  const { logout } = useContext(AuthContext);
+  const styles = getStyles(theme.colors); // Định nghĩa styles
 
   const handleLogout = () => {
-    logout();
-    Alert.alert("Đã đăng xuất");
+    Alert.alert(
+      "Đăng xuất",
+      "Bạn có chắc chắn muốn đăng xuất?",
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Đăng xuất",
+          style: "destructive",
+          onPress: async () => { await logout(); }
+        }
+      ]
+    );
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons
@@ -110,65 +49,63 @@ export default function SettingsScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Settings</Text>
       </View>
-      <ScrollView style={styles.container}>
-        {settingsOptions.map((section) => (
-          <SettingsSection
-            key={section.title}
-            title={section.title}
-            icon={section.icon}
-            items={section.items}
-            // không cần truyền 'colors' nữa
-          />
-        ))}
-
-        {/* Render mục Display với Switch */}
-        <View style={styles.sectionContainer}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="eye-outline" size={22} color={theme.colors.text} />
-            <Text style={styles.sectionTitle}>Display</Text>
+      
+      {/* --- SỬA CẤU TRÚC Ở ĐÂY --- */}
+      {/* 1. Bọc nội dung bằng một View flex: 1 */}
+      <View style={styles.contentContainer}>
+        
+        {/* 2. ScrollView chỉ bọc các mục cài đặt */}
+        <ScrollView>
+          {/* Mục Display */}
+          <View style={styles.sectionContainer}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="eye-outline" size={22} color={theme.colors.text} />
+              <Text style={styles.sectionTitle}>Display</Text>
+            </View>
+            <View
+              style={[
+                styles.itemContainer,
+                { justifyContent: 'space-between' }
+              ]}
+            >
+              <Text style={styles.itemText}>Dark Mode</Text>
+              <Switch
+                trackColor={{ false: "#767577", true: theme.colors.primary }}
+                thumbColor={isDark ? theme.colors.primary : "#f4f3f4"}
+                onValueChange={toggleTheme}
+                value={isDark}
+              />
+            </View>
           </View>
-          <View
-            style={[
-              styles.itemContainer, // Sửa: Dùng object
-              { marginLeft: 16 },
-            ]}
-          >
-            <Text style={styles.itemText}>Dark Mode</Text>
-            <Switch
-              trackColor={{ false: "#767577", true: theme.colors.primary }}
-              thumbColor={isDark ? theme.colors.primary : "#f4f3f4"}
-              onValueChange={toggleTheme}
-              value={isDark}
-            />
-          </View>
-        </View>
-
-        {/* Nút đăng xuất */}
+        </ScrollView>
+        
+        {/* 3. Nút Sign Out nằm BÊN NGOÀI ScrollView */}
         <TouchableOpacity
-          style={[
-            styles.itemContainer, // Sửa: Dùng object
-            styles.signOutButton,
-          ]}
+          style={styles.signOutButton} // Style này đã được sửa
           onPress={handleLogout}
         >
-          <Text style={[styles.itemText, styles.signOutText]}>
-            Sign Out
-          </Text>
+          <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
+      {/* --- KẾT THÚC SỬA CẤU TRÚC --- */}
     </SafeAreaView>
   );
 }
 
-// 4. Sửa hàm getStyles: các thuộc tính phải là object, không phải function
+// --- HÀM STYLES (ĐÃ SỬA LẠI) ---
 const getStyles = (colors) =>
   StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: colors.background,
+      backgroundColor: colors.background, // Nền cho khu vực an toàn
+    },
+    // View bọc ScrollView và Nút Logout
+    contentContainer: {
+        flex: 1, // Chiếm hết không gian còn lại
+        justifyContent: 'space-between', // Đẩy ScrollView lên trên và Nút xuống dưới
     },
     container: {
-      flex: 1,
+      // Bỏ flex: 1 khỏi ScrollView để nó không chiếm hết
     },
     header: {
       flexDirection: "row",
@@ -185,7 +122,7 @@ const getStyles = (colors) =>
       color: colors.text,
       marginLeft: 16,
     },
-    sectionContainer: { // Sửa: bỏ (colors)
+    sectionContainer: {
       backgroundColor: colors.card,
       marginTop: 8,
       marginBottom: 8,
@@ -197,35 +134,43 @@ const getStyles = (colors) =>
       paddingTop: 16,
       paddingBottom: 8,
     },
-    sectionTitle: { // Sửa: bỏ (colors)
+    sectionTitle: {
       fontSize: 18,
       fontWeight: "600",
       color: colors.text,
       marginLeft: 8,
     },
-    itemContainer: { // Sửa: bỏ (colors)
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
+    itemContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
       paddingVertical: 16,
       paddingHorizontal: 16,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
+      marginLeft: 16,
     },
-    itemText: { // Sửa: bỏ (colors)
+    itemText: {
       fontSize: 16,
       color: colors.text,
     },
+    // Style cho nút Sign Out đã được cập nhật
     signOutButton: {
-      marginTop: 16,
-      marginLeft: 0,
+      backgroundColor: colors.card,
+      paddingVertical: 16,
+      paddingHorizontal: 16,
       borderTopWidth: 1,
       borderTopColor: colors.border,
-      justifyContent: "center",
+      // Thêm margin và border bottom để tách biệt
+      margin: 16, 
+      borderRadius: 8, 
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
     },
     signOutText: {
       color: colors.danger,
-      fontWeight: "600",
-      textAlign: "center",
+      fontWeight: '600',
+      textAlign: 'center',
+      fontSize: 16,
     },
   });

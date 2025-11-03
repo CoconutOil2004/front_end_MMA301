@@ -1,0 +1,344 @@
+import React, { useState, useContext } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  TextInput,
+  SafeAreaView,
+  Platform,
+} from 'react-native';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import { useTheme } from '../context/ThemeContext';
+import { AuthContext } from '../context/AuthContext';
+import { uploadToCloudinary } from '../utils/cloudinaryUpload';
+import { useNavigation } from '@react-navigation/native';
+import { DEFAULT_AVATAR } from '../utils/constants';
+
+const InputRow = ({ label, value, onChangeText, multiline = false, placeholder, styles, keyboardType = 'default' }) => (
+  <View style={styles.inputContainer}>
+    <Text style={styles.label}>{label}</Text>
+    <TextInput
+      style={multiline ? styles.inputMultiline : styles.input}
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      placeholderTextColor={styles.label.color}
+      multiline={multiline}
+      numberOfLines={multiline ? 4 : 1}
+      textAlignVertical={multiline ? 'top' : 'center'}
+      keyboardType={keyboardType}
+    />
+  </View>
+);
+
+export default function EditProfileScreen() {
+  const { theme } = useTheme();
+  const styles = getStyles(theme.colors);
+  const navigation = useNavigation();
+  
+  const { user, updateProfile, updateAvatar, getDisplayAvatar } = useContext(AuthContext); 
+
+  const [name, setName] = useState(user?.name || '');
+  const [phone, setPhone] = useState(user?.phone || ''); 
+  const [bio, setBio] = useState(user?.bio || user?.about || ''); 
+  
+  const [avatar, setAvatar] = useState(getDisplayAvatar()); 
+  
+  const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleImagePick = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Cần quyền truy cập', 'Vui lòng cấp quyền truy cập thư viện ảnh.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        await handleUploadAvatar(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Lỗi chọn ảnh:', error);
+      Alert.alert('Lỗi', 'Không thể chọn ảnh.');
+    }
+  };
+
+  const handleUploadAvatar = async (uri) => {
+    setIsUploading(true);
+    try {
+      const timestamp = Date.now();
+      const userId = user?._id || user?.id || 'unknown';
+      
+      const response = await uploadToCloudinary(uri, {
+        folder: 'avatars',
+        publicId: `avatar_${userId}_${timestamp}`,
+      });
+      if (!response?.secure_url) {
+        throw new Error('Upload ảnh lên Cloudinary thất bại.');
+      }
+      
+      const newAvatarUrl = `${response.secure_url}?t=${timestamp}`;
+      
+      await updateAvatar(newAvatarUrl); 
+      
+      setAvatar(newAvatarUrl); 
+      Alert.alert('Thành công', 'Đã cập nhật ảnh đại diện.');
+      
+    } catch (error) {
+      console.error('❌ Lỗi tải avatar lên:', error);
+      Alert.alert('Lỗi', error.message || 'Không thể tải avatar lên.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const updatedData = {
+        name,
+        phone,
+        bio,
+      };
+      
+      await updateProfile(updatedData);
+      
+      Alert.alert('Thành công', 'Thông tin cá nhân đã được cập nhật.');
+      navigation.goBack(); 
+      
+    } catch (error) {
+      console.error('Lỗi lưu thông tin:', error);
+      Alert.alert('Lỗi', error.message || 'Không thể lưu thông tin.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={28} color={theme.colors.text} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Chỉnh sửa hồ sơ</Text>
+        <TouchableOpacity style={styles.headerButton} onPress={handleSave} disabled={isSaving || isUploading}>
+          {isSaving ? (
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+          ) : (
+            <Text style={styles.saveButtonText}>Lưu</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView 
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled" 
+      >
+        <View style={styles.avatarSection}>
+          <Image source={{ uri: avatar || DEFAULT_AVATAR }} style={styles.profilePhoto} />
+          <TouchableOpacity 
+            style={styles.editAvatarButton} 
+            onPress={handleImagePick} 
+            disabled={isUploading} 
+          >
+            {isUploading ? (
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+            ) : (
+              <Text style={styles.editAvatarText}>Đổi ảnh</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.card}>
+          <InputRow
+            label="Họ và tên"
+            value={name}
+            onChangeText={setName}
+            placeholder="Nhập họ tên của bạn"
+            styles={styles}
+          />
+          <InputRow
+            label="Số điện thoại" 
+            value={phone}
+            onChangeText={setPhone}
+            placeholder="Số điện thoại liên lạc"
+            styles={styles}
+            keyboardType="phone-pad" 
+          />
+        </View>
+
+        <View style={styles.card}>
+          <InputRow
+            label="Giới thiệu (Bio)" 
+            value={bio} 
+            onChangeText={setBio} 
+            placeholder="Viết một chút về bản thân bạn..."
+            multiline={true}
+            styles={styles}
+          />
+        </View>
+        
+         <View style={styles.card}>
+            <Text style={styles.label}>Email (Không thể thay đổi)</Text>
+            <Text style={[styles.input, styles.readOnlyInput]}>{user?.email || ''}</Text>
+         </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const getStyles = (colors) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.card,
+    },
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: colors.card,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    headerButton: {
+      padding: 4,
+      minWidth: 40,
+      alignItems: 'center',
+    },
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    saveButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    avatarSection: {
+      alignItems: 'center',
+      paddingVertical: 24,
+      backgroundColor: colors.card,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      marginBottom: 8,
+    },
+    profilePhoto: {
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+      backgroundColor: colors.inputBg,
+      marginBottom: 16,
+    },
+    editAvatarButton: {
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 20,
+      backgroundColor: colors.inputBg,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    editAvatarText: {
+      color: colors.primary,
+      fontWeight: '600',
+      fontSize: 14,
+    },
+    card: {
+      backgroundColor: colors.card,
+      marginBottom: 8,
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+    },
+    cardTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: colors.text,
+      marginBottom: 16,
+    },
+    inputContainer: {
+      marginBottom: 16,
+    },
+    label: {
+      fontSize: 13,
+      color: colors.placeholder,
+      marginBottom: 6,
+    },
+    input: {
+      fontSize: 16,
+      color: colors.text,
+      paddingVertical: Platform.OS === 'ios' ? 12 : 10,
+      paddingHorizontal: 12,
+      backgroundColor: colors.inputBg,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    inputMultiline: {
+      fontSize: 16,
+      color: colors.text,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      backgroundColor: colors.inputBg,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      height: 100,
+    },
+    // Style cho trường chỉ đọc (Email)
+    readOnlyInput: {
+        backgroundColor: colors.background, // Nền xám hơn
+        color: colors.placeholder, // Chữ mờ
+    },
+    infoRow: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    infoTextContainer: {
+      marginLeft: 16,
+      flex: 1,
+    },
+    infoTitle: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: colors.text,
+      marginBottom: 2,
+    },
+    infoSubText: {
+      fontSize: 14,
+      color: colors.placeholder,
+    },
+    infoDate: {
+      fontSize: 13,
+      color: colors.placeholder,
+      marginTop: 2,
+    },
+    noteText: {
+        fontSize: 12,
+        color: colors.placeholder,
+        fontStyle: 'italic',
+        textAlign: 'center',
+        marginTop: 16,
+    }
+  });

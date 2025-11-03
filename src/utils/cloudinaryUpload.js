@@ -1,5 +1,5 @@
 // utils/cloudinaryUpload.js
-
+import { Platform } from 'react-native';
 import { CLOUDINARY_CONFIG } from '../../config/cloudinary.config';
 
 /**
@@ -28,12 +28,35 @@ export const uploadToCloudinary = async (uri, options = {}) => {
     const type = match ? `image/${match[1]}` : 'image/jpeg';
 
     // Thêm file vào FormData
-    formData.append('file', {
-      uri: uri,
-      type: type,
-      name: filename || `${publicId}.jpg`,
-    });
+    // formData.append('file', {
+    //   uri: uri,
+    //   type: type,
+    //   name: filename || `${publicId}.jpg`,
+    // });
 
+
+    if (Platform.OS === 'web') {
+      // Nền tảng WEB: Cần fetch URI để lấy Blob
+      try {
+        console.log('Đang upload (WEB)...');
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        // Gửi Blob đi, cùng với tên file
+        formData.append('file', blob, filename || `${publicId}.jpg`);
+      } catch (e) {
+        console.error("Lỗi fetch blob (web):", e);
+        throw new Error("Không thể tải file từ web URI.");
+      }
+    } else {
+      // Nền tảng NATIVE (iOS/Android): Gửi object { uri, type, name }
+      console.log('Đang upload (NATIVE)...');
+      formData.append('file', {
+        uri: uri,
+        type: type,
+        name: filename || `${publicId}.jpg`,
+      });
+    }
+    
     // Thêm các tham số Cloudinary
     formData.append('upload_preset', CLOUDINARY_CONFIG.UPLOAD_PRESET);
     formData.append('folder', folder);
