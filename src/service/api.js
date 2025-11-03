@@ -5,18 +5,18 @@ import { Platform } from "react-native";
 
 // 🔧 CÁC IP BẠN HAY DÙNG (thêm/bớt tùy ý)
 const IP_CONFIGS = {
-  SCHOOL: "10.33.69.239", // Mạng trường
+  SCHOOL: "10.33.67.78", // Mạng trường
   HOME: "192.168.1.184", // Mạng nhà
   HOTSPOT: "172.20.10.2",
   KHANHHOME: "192.168.1.22",
-  MinhanhHome: "192.168.1.11", // iPhone hotspot
+  MinhanhHome: "192.168.1.15", // iPhone hotspot
   HungTran: "192.168.1.2",
   QuanVHHome: "192.168.100.74",
 };
 //VÍ DỤ : MUỐN ĐỔI IP THÌ THÊM IP VÀO ĐÂY
 
 // 👇 ĐỔI IP Ở ĐÂY - chỉ cần đổi key
-const CURRENT_IP = IP_CONFIGS.QuanVHHome; // ← VÀ ĐỔI Ở ĐÂY LÀ XONG
+const CURRENT_IP = IP_CONFIGS.SCHOOL; // ← VÀ ĐỔI Ở ĐÂY LÀ XONG
 const PORT = 9999;
 
 // 🧭 Xác định BASE_URL
