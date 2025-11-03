@@ -6,6 +6,7 @@ import {
   FlatList,
   RefreshControl,
   SafeAreaView,
+  TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from "../context/ThemeContext"; // <-- SỬA Ở ĐÂY
@@ -40,6 +41,16 @@ export default function NotificationsScreen() {
       <View style={styles.container}>
         <Ionicons name="notifications" size={64} color={theme.colors.placeholder} />
         <Text style={styles.header}>Thông Báo</Text>
+
+        <TouchableOpacity
+          style={styles.refreshButton}
+          onPress={onRefresh}
+          accessibilityRole="button"
+          accessibilityLabel="Làm mới danh sách thông báo"
+        >
+          <Ionicons name="refresh" size={20} color={theme.colors.primary} />
+          <Text style={styles.refreshText}>Làm mới</Text>
+        </TouchableOpacity>
 
         <FlatList
           data={notifications}
@@ -107,5 +118,20 @@ const getStyles = (colors) =>
       marginTop: 20,
       color: colors.placeholder,
       textAlign: 'center',
+    },
+    refreshButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 12,
+    },
+    refreshText: {
+      color: colors.primary,
+      fontWeight: '500',
     },
   });
