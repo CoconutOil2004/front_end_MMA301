@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Linking, Modal, TextInput, KeyboardAvoidingView, Platform, SafeAreaView } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Linking, Modal, TextInput, KeyboardAvoidingView, Platform, SafeAreaView, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AuthContext } from "../context/AuthContext";
 import { DEFAULT_AVATAR } from "../utils/constants";
@@ -25,6 +25,9 @@ export default function PostCard({ post, onPostUpdate }) {
   const [showReportModal, setShowReportModal] = useState(false);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [reportReason, setReportReason] = useState("");
+  
+  // State cho Send button
+  const [startingChat, setStartingChat] = useState(false);
 
   const postUserId = post.userId?._id || post.userId?.id || post.userId;
   const currentUserId = user?._id || user?.id;
@@ -129,6 +132,25 @@ export default function PostCard({ post, onPostUpdate }) {
       );
     } finally {
       setIsSubmittingReport(false);
+    }
+  };
+
+  // Xử lý nút Send/Chat
+  const handleSendPress = async () => {
+    if (startingChat) return;
+
+    try {
+      setStartingChat(true);
+      // TODO: Thêm logic mở chat ở đây
+      // Ví dụ: navigation.navigate('Chat', { userId: postUserId, postId: post._id });
+      
+      Alert.alert("Thông báo", "Chức năng chat đang được phát triển");
+      
+    } catch (error) {
+      console.error("Error starting chat:", error);
+      Alert.alert("Lỗi", "Không thể mở chat. Vui lòng thử lại!");
+    } finally {
+      setStartingChat(false);
     }
   };
 
@@ -259,28 +281,13 @@ export default function PostCard({ post, onPostUpdate }) {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.footerButton}
-          onPress={handleSendPress}
-          disabled={startingChat}
-        >
-          {startingChat ? (
-            <ActivityIndicator size="small" color={theme.colors.primary} />
-          ) : (
-            <Ionicons
-              name="paper-plane-outline"
-              size={20}
-              color={theme.colors.placeholder}
-            />
-          )}
-          <Text
-            style={[
-              styles.footerButtonText,
-              startingChat && styles.footerButtonTextDisabled,
-            ]}
-          >
-            {startingChat ? "Đang mở" : "Send"}
-          </Text>
+        <TouchableOpacity style={styles.footerButton}>
+          <Ionicons
+            name="paper-plane-outline"
+            size={20}
+            color={theme.colors.placeholder}
+          />
+          <Text style={styles.footerButtonText}>Send</Text>
         </TouchableOpacity>
       </View>
 
@@ -525,10 +532,6 @@ const getStyles = (colors) =>
       fontSize: 14,
       color: colors.placeholder,
       marginLeft: 6,
-    },
-    footerButtonTextDisabled: {
-      color: colors.placeholder,
-      opacity: 0.7,
     },
     footerButtonTextActive: {
       color: colors.primary,
