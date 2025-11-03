@@ -259,13 +259,28 @@ export default function PostCard({ post, onPostUpdate }) {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerButton}>
-          <Ionicons
-            name="paper-plane-outline"
-            size={20}
-            color={theme.colors.placeholder}
-          />
-          <Text style={styles.footerButtonText}>Send</Text>
+        <TouchableOpacity
+          style={styles.footerButton}
+          onPress={handleSendPress}
+          disabled={startingChat}
+        >
+          {startingChat ? (
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+          ) : (
+            <Ionicons
+              name="paper-plane-outline"
+              size={20}
+              color={theme.colors.placeholder}
+            />
+          )}
+          <Text
+            style={[
+              styles.footerButtonText,
+              startingChat && styles.footerButtonTextDisabled,
+            ]}
+          >
+            {startingChat ? "Đang mở" : "Send"}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -510,6 +525,10 @@ const getStyles = (colors) =>
       fontSize: 14,
       color: colors.placeholder,
       marginLeft: 6,
+    },
+    footerButtonTextDisabled: {
+      color: colors.placeholder,
+      opacity: 0.7,
     },
     footerButtonTextActive: {
       color: colors.primary,
