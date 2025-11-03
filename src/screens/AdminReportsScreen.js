@@ -146,26 +146,40 @@ export default function AdminReportsScreen() {
     );
 
   return (
-    <FlatList
-      data={reports}
-      keyExtractor={(item) => item._id}
-      renderItem={renderItem}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          colors={[theme.colors.primary]}
-        />
-      }
-      contentContainerStyle={{ padding: 16 }}
-      ListEmptyComponent={
-        <View style={styles.center}>
-          <Text style={{ color: theme.colors.placeholder }}>
-            Không có báo cáo nào.
-          </Text>
-        </View>
-      }
-    />
+    <>
+      <View style={styles.refreshContainer}>
+        <TouchableOpacity
+          style={[styles.refreshButton, { backgroundColor: theme.colors.primary }]}
+          onPress={() => {
+            setRefreshing(true);
+            loadReports();
+          }}
+        >
+          <Text style={styles.btnText}>Làm mới</Text>
+        </TouchableOpacity>
+      </View>
+
+      <FlatList
+        data={reports}
+        keyExtractor={(item) => item._id}
+        renderItem={renderItem}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+          />
+        }
+        contentContainerStyle={{ padding: 16 }}
+        ListEmptyComponent={
+          <View style={styles.center}>
+            <Text style={{ color: theme.colors.placeholder }}>
+              Không có báo cáo nào.
+            </Text>
+          </View>
+        }
+      />
+    </>
   );
 }
 
@@ -246,5 +260,15 @@ const getStyles = (colors) =>
     btnText: {
       color: "#fff",
       fontWeight: "600",
+    },
+    refreshContainer: {
+      paddingHorizontal: 16,
+      paddingTop: 16,
+    },
+    refreshButton: {
+      alignSelf: "flex-end",
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 8,
     },
   });
