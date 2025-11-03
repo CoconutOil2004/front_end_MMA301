@@ -139,17 +139,6 @@ export default function DrawerContent({ isOpen, onClose }) {
             />
             <Text style={styles.settingsText}>Settings</Text>
           </TouchableOpacity>
-
-          <View style={styles.premiumContainer}>
-            <TouchableOpacity style={styles.premiumButton}>
-              <Ionicons
-                name="ribbon-outline"
-                size={20}
-                color={theme.colors.activeText}
-              />
-              <Text style={styles.premiumText}>Try Premium for đ0</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </Animated.View>
     </View>

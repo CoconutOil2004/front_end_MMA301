@@ -4,6 +4,7 @@ import {
   loginUser,
   registerUser,
   getProfile,
+  updateUserProfile,
   updateAvatar as updateAvatarAPI,
 } from "../service";
 import { DEFAULT_AVATAR } from "../utils/constants";
@@ -108,14 +109,57 @@ export const AuthProvider = ({ children }) => {
     setRole(null);
     setAvatarUrl(null);
   };
-  const updateAvatar = async (newAvatarUrl) => {
+
+  const updateProfile = async (data) => { // data = { name, phone, bio }
+    try {
+      console.log("🔄 Đang cập nhật profile (text fields):", data);
+      const response = await updateUserProfile(data); // Gọi API /users/update
+
+      if (!response || !response.user) {
+        throw new Error("Phản hồi từ API cập nhật profile không hợp lệ");
+      }
+      
+      const updatedUser = response.user;
+      
+      // Cập nhật state (quan trọng)
+      setUser(updatedUser); 
+      setRole(updatedUser.role || "user");
+      
+      // Cập nhật storage (đồng bộ với logic của bạn)
+      await AsyncStorage.setItem("userRole", updatedUser.role || "user");
+      // Mặc dù API này không đổi avatar, ta vẫn sync để đảm bảo
+      // (Hoặc có thể chỉ cần: setUser(updatedUser);)
+      await syncAvatarFromUser(updatedUser); 
+      
+      console.log("✅ Context: Cập nhật profile (text) thành công.");
+      
+    } catch (error) {
+      console.error("Lỗi updateProfile (context):", error.response?.data || error.message);
+      throw error; // Ném lỗi ra để màn hình EditProfile xử lý
+    }
+  };
+
+const updateAvatar = async (newAvatarUrl) => {
     try {
       console.log("🔄 Đang cập nhật avatar:", newAvatarUrl);
-      await updateAvatarAPI(newAvatarUrl);
-      await AsyncStorage.setItem("userAvatar", newAvatarUrl);
-      setAvatarUrl(newAvatarUrl);
-      if (user) setUser({ ...user, avatar: newAvatarUrl });
-      console.log("✅ Avatar updated globally:", newAvatarUrl);
+      
+      // 1. Gọi API và *lấy kết quả*
+      const response = await updateAvatarAPI(newAvatarUrl); // Sửa: Dùng tên import
+      
+      // 2. Kiểm tra kết quả trả về
+      if (!response || !response.user) {
+          throw new Error("Phản hồi từ API cập nhật avatar không hợp lệ");
+      }
+
+      // 3. Lấy user đã được cập nhật đầy đủ từ backend
+      const updatedUser = response.user;
+      
+      // 4. Cập nhật state và storage bằng dữ liệu mới nhất
+      await AsyncStorage.setItem("userAvatar", updatedUser.avatar);
+      setAvatarUrl(updatedUser.avatar);
+      setUser(updatedUser); // <-- Sửa: Dùng updatedUser
+      
+      console.log("✅ Avatar updated globally:", updatedUser.avatar);
     } catch (error) {
       console.error("❌ Error updating avatar:", error);
       throw error;
@@ -137,6 +181,7 @@ export const AuthProvider = ({ children }) => {
         logout,
         updateAvatar,
         getDisplayAvatar,
+        updateProfile
       }}
     >
       {children}

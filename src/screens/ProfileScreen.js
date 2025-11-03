@@ -10,15 +10,18 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
-  SafeAreaView, // <-- Import SafeAreaView
+  SafeAreaView,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native"; // <-- Import
 import * as ImagePicker from 'expo-image-picker';
 import { AuthContext } from "../context/AuthContext";
-// Giả sử API getPostByUserId tồn tại trong service
-import { getPostByUserId } from "../service";
-// Giả sử bạn có hàm upload này
-import { uploadToCloudinary } from "../utils/cloudinaryUpload";
+import { getPostByUserId, changePassword } from "../service"; // Giả sử API getPostByUserId tồn tại trong service
+import { uploadToCloudinary } from "../utils/cloudinaryUpload"; // Giả sử bạn có hàm upload này
 import PostCard from "../components/PostCard";
 import { useTheme } from "../context/ThemeContext"; // <-- 1. IMPORT USE THEME
 
@@ -27,6 +30,7 @@ export default function ProfileScreen() {
   const { logout, user, updateAvatar, getDisplayAvatar } = useContext(AuthContext);
   const { theme } = useTheme(); // <-- 2. GỌI USE THEME
   const styles = getStyles(theme.colors); // <-- 3. TẠO STYLES ĐỘNG
+  const navigation = useNavigation(); // <-- 4. GỌI HOOK NAVIGATION
 
   // States
   const [posts, setPosts] = useState([]);
@@ -34,6 +38,12 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [displayAvatar, setDisplayAvatar] = useState(getDisplayAvatar());
+
+// --- 6. THÊM STATE CHO MODAL ---
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
 
   // Cập nhật avatar hiển thị khi avatar trong context (user) thay đổi
   useEffect(() => {
@@ -55,7 +65,6 @@ export default function ProfileScreen() {
   // Hàm fetch bài viết
   const fetchUserPosts = async (userId) => {
     setLoading(true);
-    // setRefreshing(true); // Chỉ set refreshing khi kéo
     try {
       const response = await getPostByUserId(userId);
       if (response && Array.isArray(response)) {
@@ -72,7 +81,6 @@ export default function ProfileScreen() {
       setPosts([]);
     } finally {
       setLoading(false);
-      // setRefreshing(false); // Chỉ tắt trong onRefresh
     }
   };
 
@@ -153,12 +161,48 @@ export default function ProfileScreen() {
     );
   };
 
-  // Thông tin hiển thị (có fallback)
+  const openPasswordModal = () => {
+    setIsModalVisible(true);
+  };
+
+  const closePasswordModal = () => {
+    setIsModalVisible(false);
+    setOldPassword(""); // Reset input
+    setNewPassword(""); // Reset input
+  };
+
+  const handleChangePassword = async () => {
+    if (!oldPassword || !newPassword) {
+      Alert.alert("Lỗi", "Vui lòng nhập đủ mật khẩu cũ và mới.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      Alert.alert("Lỗi", "Mật khẩu mới phải có ít nhất 6 ký tự.");
+      return;
+    }
+
+    setIsSavingPassword(true);
+    try {
+      // Gọi API service
+      const response = await changePassword({ oldPassword, newPassword });
+      
+      Alert.alert("Thành công", response.message || "Đổi mật khẩu thành công!");
+      closePasswordModal(); // Đóng modal khi thành công
+      
+    } catch (error) {
+      console.error("Lỗi đổi mật khẩu:", error.response?.data || error.message);
+      Alert.alert("Lỗi", error.response?.data?.message || "Đã có lỗi xảy ra.");
+    } finally {
+      setIsSavingPassword(false);
+    }
+  };
+
+  // Thông tin hiển thị (đã sửa để khớp với backend)
   const displayName = user?.name || 'Người dùng';
   const displayEmail = user?.email || '';
-  const displayHeadline = user?.headline || 'Chưa cập nhật headline';
-  const displayLocation = user?.location || 'Chưa cập nhật vị trí';
-  const displayAbout = user?.about || 'Chưa có giới thiệu.';
+  const displayHeadline = user?.bio || 'Chưa cập nhật giới thiệu'; // Sửa: headline -> bio
+  const displayLocation = user?.phone || 'Chưa cập nhật SĐT'; // Sửa: location -> phone
+  const displayAbout = user?.bio || 'Chưa có giới thiệu.'; // Sửa: about -> bio
 
   // Render loading ban đầu
   if (loading && posts.length === 0 && !refreshing) {
@@ -175,7 +219,6 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
         style={styles.container}
-        // Đặt nền cho nội dung cuộn
         contentContainerStyle={{ backgroundColor: theme.colors.background, paddingBottom: 40 }}
         refreshControl={
           <RefreshControl
@@ -195,7 +238,7 @@ export default function ProfileScreen() {
           />
         </View>
 
-        {/* === Thông tin Profile === */}
+        {/* === Thông tin Profile (ĐÃ SỬA) === */}
         <View style={styles.profileInfoContainer}>
           <View style={styles.avatarContainer}>
             <Image
@@ -217,71 +260,49 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
           <Text style={styles.name}>{displayName}</Text>
-          <Text style={styles.headline}>{displayHeadline}</Text>
-          <Text style={styles.location}>
-            {displayLocation} • {posts.length} bài viết
+          {/* Hiển thị BIO (từ headline) */}
+          {/* <Text style={styles.headline} numberOfLines={2}>{displayHeadline}</Text>  */}
+          {/* Hiển thị PHONE (từ location) */}
+          <Text style={styles.location}> 
+            • {posts.length} bài viết
           </Text>
         </View>
 
-        {/* === Các nút Action === */}
+        {/* === Các nút Action (ĐÃ SỬA) === */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={[styles.button, styles.primaryButton]}>
-            <Text style={styles.primaryButtonText}>Chỉnh sửa</Text>
+          <TouchableOpacity 
+          style={[styles.button, styles.primaryButton]}
+          onPress={() => navigation.navigate('EditProfile')} // Thêm điều hướng
+          >
+            <Text style={styles.primaryButtonText}>Chỉnh sửa hồ sơ</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.button, styles.secondaryButton]}>
-            {/* Giữ lại Text hoặc Icon tùy ý */}
-            <Text style={styles.secondaryButtonText}>Chia sẻ</Text>
-            {/* <Ionicons name="share-social-outline" size={20} color={theme.colors.text} /> */}
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.button, styles.secondaryButton]}>
+          <TouchableOpacity 
+          style={[styles.button, styles.secondaryButton]}
+          onPress={openPasswordModal}
+          >
             <Ionicons name="ellipsis-horizontal" size={20} color={theme.colors.text} />
           </TouchableOpacity>
         </View>
 
-        {/* === Card Giới thiệu === */}
+        {/* === Card Giới thiệu (ĐÃ SỬA) === */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Giới thiệu</Text>
-          <Text style={styles.aboutText}>{displayAbout}</Text>
+          {/* Hiển thị BIO (từ about) */}
+          <Text style={styles.aboutText}>{displayAbout}</Text> 
           {displayEmail && (
             <View style={styles.emailContainer}>
               <Ionicons name="mail-outline" size={16} color={theme.colors.placeholder} />
               <Text style={styles.emailText}>{displayEmail}</Text>
             </View>
+            
           )}
-        </View>
-
-        {/* === Card Kinh nghiệm === */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Kinh nghiệm</Text>
-          <View style={styles.infoRow}>
-            <MaterialIcons name="work-outline" size={32} color={theme.colors.placeholder} />
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoTitle}>Senior React Native Developer</Text>
-              <Text style={styles.infoSubText}>Tech Company • Toàn thời gian</Text>
-              <Text style={styles.infoDate}>Tháng 1, 2023 - Hiện tại • 2 năm</Text>
+           {displayLocation && (
+            <View style={styles.emailContainer}>
+              <Ionicons name="call-outline" size={16} color={theme.colors.placeholder} />
+              <Text style={styles.emailText}>{displayLocation}</Text>
             </View>
-          </View>
-          <View style={styles.infoRow}>
-            <MaterialIcons name="work-outline" size={32} color={theme.colors.placeholder} />
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoTitle}>React Native Developer</Text>
-              <Text style={styles.infoSubText}>Startup • Toàn thời gian</Text>
-              <Text style={styles.infoDate}>Tháng 1, 2020 - Tháng 12, 2022 • 3 năm</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* === Card Học vấn === */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Học vấn</Text>
-          <View style={styles.infoRow}>
-            <MaterialIcons name="school-outline" size={32} color={theme.colors.placeholder} />
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoTitle}>Đại học Bách Khoa Hà Nội</Text>
-              <Text style={styles.infoSubText}>Cử nhân, Khoa học Máy tính</Text>
-              <Text style={styles.infoDate}>2015 - 2019</Text>
-            </View>
-          </View>
+            
+          )}
         </View>
 
         {/* === Phần Hoạt động === */}
@@ -316,6 +337,76 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+{/* --- 9. THÊM MODAL ĐỔI MẬT KHẨU --- */}
+      <Modal
+        visible={isModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={closePasswordModal}
+      >
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          {/* Vùng mờ bên ngoài */}
+          <TouchableOpacity 
+            style={StyleSheet.absoluteFill} 
+            onPress={closePasswordModal}
+          />
+          
+          {/* Nội dung Modal */}
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Đổi mật khẩu</Text>
+            
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Mật khẩu cũ</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Nhập mật khẩu cũ của bạn"
+                placeholderTextColor={theme.colors.placeholder}
+                secureTextEntry
+                value={oldPassword}
+                onChangeText={setOldPassword}
+              />
+            </View>
+            
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Mật khẩu mới</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Nhập mật khẩu mới (ít nhất 6 ký tự)"
+                placeholderTextColor={theme.colors.placeholder}
+                secureTextEntry
+                value={newPassword}
+                onChangeText={setNewPassword}
+              />
+            </View>
+
+            {/* Nút Bấm */}
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={closePasswordModal}
+              >
+                <Text style={styles.modalButtonTextCancel}>Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.modalButtonSave]}
+                onPress={handleChangePassword}
+                disabled={isSavingPassword}
+              >
+                {isSavingPassword ? (
+                  <ActivityIndicator size="small" color={theme.colors.activeText} />
+                ) : (
+                  <Text style={styles.modalButtonTextSave}>Lưu</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -325,15 +416,14 @@ const getStyles = (colors) =>
   StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: colors.background, // Nền cho cả khu vực an toàn
+      backgroundColor: colors.background,
     },
     container: {
       flex: 1,
-      // Nền được đặt ở contentContainerStyle
     },
     header: {
-      height: 150, // Chiều cao ảnh bìa
-      backgroundColor: colors.inputBg, // Màu nền placeholder ảnh bìa
+      height: 150,
+      backgroundColor: colors.inputBg,
     },
     coverPhoto: {
       width: "100%",
@@ -341,13 +431,13 @@ const getStyles = (colors) =>
     },
     profileInfoContainer: {
       alignItems: "center",
-      marginTop: -50, // Avatar đè lên ảnh bìa
+      marginTop: -50,
       paddingHorizontal: 16,
-      backgroundColor: colors.card, // Nền khu vực thông tin
+      backgroundColor: colors.card,
       paddingBottom: 20,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
-      marginBottom: 8, // Khoảng cách dưới khu vực thông tin
+      marginBottom: 8,
     },
     avatarContainer: {
       position: 'relative',
@@ -357,40 +447,40 @@ const getStyles = (colors) =>
       width: 100,
       height: 100,
       borderRadius: 50,
-      borderColor: colors.card, // Viền cùng màu nền
+      borderColor: colors.card,
       borderWidth: 4,
-      backgroundColor: colors.inputBg, // Màu nền placeholder avatar
+      backgroundColor: colors.inputBg,
     },
     editAvatarButton: {
       position: 'absolute',
       bottom: 0,
       right: 0,
-      backgroundColor: colors.primary, // Màu nút sửa
+      backgroundColor: colors.primary,
       width: 32,
       height: 32,
       borderRadius: 16,
       justifyContent: 'center',
       alignItems: 'center',
       borderWidth: 2,
-      borderColor: colors.card, // Viền cùng màu nền
+      borderColor: colors.card,
     },
     name: {
       fontSize: 22,
       fontWeight: "bold",
       marginTop: 8,
-      color: colors.text, // Màu chữ tên
+      color: colors.text,
       textAlign: 'center',
     },
     headline: {
       fontSize: 15,
-      color: colors.placeholder, // Màu chữ headline
+      color: colors.placeholder,
       marginTop: 4,
       textAlign: "center",
       paddingHorizontal: 20,
     },
     location: {
       fontSize: 14,
-      color: colors.placeholder, // Màu chữ vị trí
+      color: colors.placeholder,
       marginTop: 6,
       textAlign: 'center',
     },
@@ -399,7 +489,7 @@ const getStyles = (colors) =>
       justifyContent: "center",
       paddingHorizontal: 16,
       paddingVertical: 12,
-      backgroundColor: colors.card, // Nền khu vực nút
+      backgroundColor: colors.card,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
       marginBottom: 8,
@@ -414,41 +504,41 @@ const getStyles = (colors) =>
       height: 40,
     },
     primaryButton: {
-      backgroundColor: colors.primary, // Màu nút chính
-      flex: 1, // Chiếm nhiều không gian hơn
+      backgroundColor: colors.primary,
+      flex: 1,
       marginRight: 4,
     },
     primaryButtonText: {
-      color: colors.activeText, // Màu chữ nút chính
+      color: colors.activeText,
       fontWeight: "bold",
       fontSize: 14,
     },
     secondaryButton: {
-      backgroundColor: colors.inputBg, // Nền nút phụ
+      backgroundColor: colors.inputBg,
       borderColor: colors.border,
       borderWidth: 1,
-      minWidth: 40, // Đủ rộng cho icon
+      minWidth: 40,
       paddingHorizontal: 12,
     },
     secondaryButtonText: {
-      color: colors.text, // Màu chữ nút phụ (nếu có text)
+      color: colors.text,
       fontWeight: "bold",
       fontSize: 14,
     },
     card: {
-      backgroundColor: colors.card, // Nền thẻ
+      backgroundColor: colors.card,
       padding: 16,
-      marginBottom: 8, // Khoảng cách giữa các thẻ
+      marginBottom: 8,
     },
     cardTitle: {
       fontSize: 18,
       fontWeight: "bold",
       marginBottom: 12,
-      color: colors.text, // Màu tiêu đề thẻ
+      color: colors.text,
     },
     aboutText: {
       fontSize: 14,
-      color: colors.text, // Màu chữ giới thiệu
+      color: colors.text,
       lineHeight: 20,
     },
     emailContainer: {
@@ -457,16 +547,16 @@ const getStyles = (colors) =>
       marginTop: 12,
       paddingTop: 12,
       borderTopWidth: 1,
-      borderTopColor: colors.border, // Màu đường kẻ
+      borderTopColor: colors.border,
     },
     emailText: {
       fontSize: 14,
-      color: colors.placeholder, // Màu chữ email
+      color: colors.placeholder,
       marginLeft: 8,
     },
     infoRow: {
       flexDirection: "row",
-      alignItems: "flex-start", // Icon và text căn lề trên
+      alignItems: "flex-start",
       marginBottom: 16,
     },
     infoTextContainer: {
@@ -476,46 +566,46 @@ const getStyles = (colors) =>
     infoTitle: {
       fontSize: 15,
       fontWeight: "600",
-      color: colors.text, // Màu tiêu đề chính (kinh nghiệm, học vấn)
+      color: colors.text,
       marginBottom: 2,
     },
     infoSubText: {
       fontSize: 14,
-      color: colors.placeholder, // Màu chữ phụ (công ty, ngành học)
+      color: colors.placeholder,
     },
     infoDate: {
       fontSize: 13,
-      color: colors.placeholder, // Màu chữ ngày tháng
+      color: colors.placeholder,
       marginTop: 2,
     },
     activityTitleContainer: {
       paddingHorizontal: 16,
-      backgroundColor: colors.card, // Nền tiêu đề hoạt động
+      backgroundColor: colors.card,
       paddingTop: 16,
-      paddingBottom: 0, // Bỏ padding dưới vì PostCard đầu tiên sẽ có marginTop=8
+      paddingBottom: 0,
     },
     loadingContainer: {
       paddingVertical: 40,
       alignItems: 'center',
-      backgroundColor: colors.card, // Nền loading
+      backgroundColor: colors.card,
       minHeight: 150,
       justifyContent: 'center',
     },
     loadingText: {
       marginTop: 12,
       fontSize: 14,
-      color: colors.placeholder, // Màu chữ loading
+      color: colors.placeholder,
     },
-    loadingContainerFull: { // Loading toàn màn hình ban đầu
+    loadingContainerFull: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: colors.background,
     },
-    emptyContainer: { // Khi không có bài viết
+    emptyContainer: {
       paddingVertical: 40,
       alignItems: 'center',
-      backgroundColor: colors.card, // Nền khi trống
+      backgroundColor: colors.card,
       minHeight: 150,
       justifyContent: 'center',
       marginBottom: 8,
@@ -523,29 +613,97 @@ const getStyles = (colors) =>
     emptyText: {
       marginTop: 12,
       fontSize: 16,
-      color: colors.placeholder, // Màu chữ khi trống
+      color: colors.placeholder,
     },
     logoutContainer: {
       alignItems: "center",
       marginVertical: 24,
-      marginBottom: 40, // Khoảng cách cuối trang
+      marginBottom: 40,
       paddingHorizontal: 16,
     },
     logoutButton: {
-      backgroundColor: colors.danger, // Màu nút đăng xuất
+      backgroundColor: colors.danger,
       paddingVertical: 12,
       borderRadius: 10,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      width: '100%', // Nút full width
+      width: '100%',
     },
     logoutIcon: {
       marginRight: 8,
     },
     logoutText: {
-      color: colors.activeText, // Màu chữ nút đăng xuất
+      color: colors.activeText,
       fontSize: 16,
       fontWeight: "600",
+    },
+    // --- STYLES MỚI CHO MODAL ---
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'flex-end', // Đẩy modal lên từ dưới
+    },
+    modalContent: {
+      backgroundColor: colors.card,
+      padding: 22,
+      borderTopRightRadius: 20,
+      borderTopLeftRadius: 20,
+      paddingBottom: Platform.OS === 'ios' ? 40 : 22, // Thêm padding cho iOS
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: colors.text,
+      marginBottom: 20,
+      textAlign: 'center',
+    },
+    inputContainer: { // Style này dùng lại từ EditProfile
+      marginBottom: 16,
+    },
+    label: { // Style này dùng lại từ EditProfile
+      fontSize: 13,
+      color: colors.placeholder,
+      marginBottom: 6,
+    },
+    input: { // Style này dùng lại từ EditProfile
+      fontSize: 16,
+      color: colors.text,
+      paddingVertical: Platform.OS === 'ios' ? 12 : 10,
+      paddingHorizontal: 12,
+      backgroundColor: colors.inputBg,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    modalButtonContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 16,
+    },
+    modalButton: {
+      flex: 1,
+      paddingVertical: 12,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    modalButtonCancel: {
+      backgroundColor: colors.inputBg,
+      marginRight: 8,
+    },
+    modalButtonTextCancel: {
+      color: colors.text,
+      fontWeight: '600',
+      fontSize: 16,
+    },
+    modalButtonSave: {
+      backgroundColor: colors.primary,
+      marginLeft: 8,
+    },
+    modalButtonTextSave: {
+      color: colors.activeText,
+      fontWeight: '600',
+      fontSize: 16,
     },
   });

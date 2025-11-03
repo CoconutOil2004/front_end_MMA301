@@ -21,6 +21,7 @@ import ChatDetailScreen from "../screens/ChatDetailScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import PostDetailScreen from "../screens/PostDetailScreen";
 import AdminReportsScreen from "../screens/AdminReportsScreen";
+import EditProfileScreen from "../screens/EditProfileScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -86,6 +87,7 @@ function AppStack({ role }) {
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="Search" component={SearchScreen} />
       <Stack.Screen name="PostDetail" component={PostDetailScreen} />
+      <Stack.Screen name="EditProfile" component={EditProfileScreen} />
     </Stack.Navigator>
   );
 }
