@@ -10,7 +10,7 @@ const IP_CONFIGS = {
   HOTSPOT: "172.20.10.2",
   KHANHHOME:"192.168.1.22",
   MinhanhHome:"192.168.1.11",  
-  QuanVHHome:"192.168.100.74"
+  QuanVHHome:"192.168.0.111"
 };
 //VÍ DỤ : MUỐN ĐỔI IP THÌ THÊM IP VÀO ĐÂY
 
