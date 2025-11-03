@@ -196,4 +196,19 @@ const getStyles = (colors) =>
       marginTop: 6,
       textAlign: "right",
     },
+    refreshButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 12,
+    },
+    refreshText: {
+      color: colors.primary,
+      fontWeight: '500',
+    },
   });
