@@ -17,7 +17,7 @@ const customLightColors = {
 };
 
 const customDarkColors = {
-  background: "#121212",
+  background: "#1E1E1E",
   text: "#F8FAFC",
   card: "#1E1E1E",
   border: "#3A3A3A",
