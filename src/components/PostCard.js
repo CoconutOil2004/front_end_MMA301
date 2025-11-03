@@ -1,5 +1,13 @@
-import React, { useContext, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Linking, Modal, TextInput, KeyboardAvoidingView, Platform, SafeAreaView, ActivityIndicator } from "react-native";
+import React, { useContext, useMemo, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AuthContext } from "../context/AuthContext";
 import { DEFAULT_AVATAR } from "../utils/constants";
@@ -49,17 +57,18 @@ export default function PostCard({ post, onPostUpdate }) {
   const status = post.status || "open";
   const contactPhone = post.contactPhone || "";
 
-  // Xử lý like/unlike
-  const handleLike = async () => {
-    if (isLiking) return;
-    
-    try {
-      setIsLiking(true);
-      const newIsLiked = !isLiked;
-      const newLikesCount = newIsLiked ? likesCount + 1 : likesCount - 1;
-      
-      setIsLiked(newIsLiked);
-      setLikesCount(newLikesCount);
+  const postOwner = useMemo(
+    () => ({
+      _id: postUserId,
+      name,
+      avatar,
+      phone: contactPhone,
+    }),
+    [avatar, contactPhone, name, postUserId]
+  );
+
+  const handleSendPress = async () => {
+    if (startingChat) return;
 
       const postId = post._id || post.id;
       const response = await likePost(postId);
@@ -116,36 +125,39 @@ export default function PostCard({ post, onPostUpdate }) {
         reason: reportReason.trim(),
       };
 
-      const response = await createReport(reportData);
-      
-      if (response.message) {
-        Alert.alert("Thành công", "Đã gửi báo cáo thành công!");
-        setShowReportModal(false);
-        setReportReason(""); // Reset input
-      }
-      
-    } catch (error) {
-      console.error("Error submitting report:", error);
-      Alert.alert(
-        "Lỗi", 
-        error.response?.data?.message || "Không thể gửi báo cáo. Vui lòng thử lại!"
+      const receiverFromConversation = conversation.participants?.find(
+        (participant) => {
+          const participantId = participant?._id || participant;
+          return participantId && participantId !== currentUserId;
+        }
       );
     } finally {
       setIsSubmittingReport(false);
     }
   };
 
-  // Xử lý nút Send/Chat
-  const handleSendPress = async () => {
-    if (startingChat) return;
+      const receiver = receiverFromConversation
+        ? {
+            _id: receiverFromConversation._id || receiverFromConversation,
+            name: receiverFromConversation.name || postOwner.name,
+            avatar: receiverFromConversation.avatar || postOwner.avatar,
+            phone: receiverFromConversation.phone || postOwner.phone,
+          }
+        : (typeof post.userId === "object" && {
+            _id: post.userId._id || post.userId.id,
+            name: post.userId.name || postOwner.name,
+            avatar: post.userId.avatar || postOwner.avatar,
+            phone: post.userId.phone || postOwner.phone,
+          }) || postOwner;
 
-    try {
-      setStartingChat(true);
-      // TODO: Thêm logic mở chat ở đây
-      // Ví dụ: navigation.navigate('Chat', { userId: postUserId, postId: post._id });
-      
-      Alert.alert("Thông báo", "Chức năng chat đang được phát triển");
-      
+      navigation.navigate("ChatDetail", {
+        conversationId: conversation._id,
+        receiver,
+        originPost: {
+          id: post.id || post._id || conversation._id,
+          title,
+        },
+      });
     } catch (error) {
       console.error("Error starting chat:", error);
       Alert.alert("Lỗi", "Không thể mở chat. Vui lòng thử lại!");
