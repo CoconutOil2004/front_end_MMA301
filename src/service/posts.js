@@ -4,6 +4,10 @@ export const createPost = async (data) => {
   const res = await api.post("/posts", data);
   return res.data;
 };
+export const likePost = async (id) => {
+  const res = await api.post(`/posts/${id}/like`); 
+  return res.data;
+};
 
 export const getPosts = async (page = 1, limit = 10) => {
   const res = await api.get(`/posts?page=${page}&limit=${limit}`);
