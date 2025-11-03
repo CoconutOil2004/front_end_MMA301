@@ -1,4 +1,3 @@
-// src/screens/ProfileScreen.js
 import React, { useContext, useState, useEffect } from "react";
 import {
   View,
@@ -17,20 +16,19 @@ import {
   Platform
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native"; // <-- Import
+import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from 'expo-image-picker';
 import { AuthContext } from "../context/AuthContext";
-import { getPostByUserId, changePassword } from "../service"; // Giả sử API getPostByUserId tồn tại trong service
-import { uploadToCloudinary } from "../utils/cloudinaryUpload"; // Giả sử bạn có hàm upload này
+import { getPostByUserId, changePassword } from "../service";
+import { uploadToCloudinary } from "../utils/cloudinaryUpload";
 import PostCard from "../components/PostCard";
-import { useTheme } from "../context/ThemeContext"; // <-- 1. IMPORT USE THEME
+import { useTheme } from "../context/ThemeContext";
 
 export default function ProfileScreen() {
-  // Lấy context
   const { logout, user, updateAvatar, getDisplayAvatar } = useContext(AuthContext);
-  const { theme } = useTheme(); // <-- 2. GỌI USE THEME
-  const styles = getStyles(theme.colors); // <-- 3. TẠO STYLES ĐỘNG
-  const navigation = useNavigation(); // <-- 4. GỌI HOOK NAVIGATION
+  const { theme } = useTheme();
+  const styles = getStyles(theme.colors);
+  const navigation = useNavigation(); //
 
   // States
   const [posts, setPosts] = useState([]);
@@ -39,18 +37,16 @@ export default function ProfileScreen() {
   const [uploading, setUploading] = useState(false);
   const [displayAvatar, setDisplayAvatar] = useState(getDisplayAvatar());
 
-// --- 6. THÊM STATE CHO MODAL ---
+// STATE CHO MODAL
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [isSavingPassword, setIsSavingPassword] = useState(false);
 
-  // Cập nhật avatar hiển thị khi avatar trong context (user) thay đổi
   useEffect(() => {
     setDisplayAvatar(getDisplayAvatar());
   }, [user, getDisplayAvatar]);
 
-  // Fetch bài viết của user khi component mount hoặc khi user thay đổi
   useEffect(() => {
     const userId = user?._id || user?.id;
     if (userId) {
@@ -59,7 +55,6 @@ export default function ProfileScreen() {
       setLoading(false);
       setPosts([]);
     }
-     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   // Hàm fetch bài viết
@@ -183,11 +178,10 @@ export default function ProfileScreen() {
 
     setIsSavingPassword(true);
     try {
-      // Gọi API service
       const response = await changePassword({ oldPassword, newPassword });
       
       Alert.alert("Thành công", response.message || "Đổi mật khẩu thành công!");
-      closePasswordModal(); // Đóng modal khi thành công
+      closePasswordModal();
       
     } catch (error) {
       console.error("Lỗi đổi mật khẩu:", error.response?.data || error.message);
@@ -200,9 +194,9 @@ export default function ProfileScreen() {
   // Thông tin hiển thị (đã sửa để khớp với backend)
   const displayName = user?.name || 'Người dùng';
   const displayEmail = user?.email || '';
-  const displayHeadline = user?.bio || 'Chưa cập nhật giới thiệu'; // Sửa: headline -> bio
-  const displayLocation = user?.phone || 'Chưa cập nhật SĐT'; // Sửa: location -> phone
-  const displayAbout = user?.bio || 'Chưa có giới thiệu.'; // Sửa: about -> bio
+  const displayHeadline = user?.bio || 'Chưa cập nhật giới thiệu';
+  const displayLocation = user?.phone || 'Chưa cập nhật SĐT';
+  const displayAbout = user?.bio || 'Chưa có giới thiệu.';
 
   // Render loading ban đầu
   if (loading && posts.length === 0 && !refreshing) {
@@ -238,7 +232,7 @@ export default function ProfileScreen() {
           />
         </View>
 
-        {/* === Thông tin Profile (ĐÃ SỬA) === */}
+        {/* === Thông tin Profile=== */}
         <View style={styles.profileInfoContainer}>
           <View style={styles.avatarContainer}>
             <Image
@@ -260,19 +254,16 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
           <Text style={styles.name}>{displayName}</Text>
-          {/* Hiển thị BIO (từ headline) */}
-          {/* <Text style={styles.headline} numberOfLines={2}>{displayHeadline}</Text>  */}
-          {/* Hiển thị PHONE (từ location) */}
           <Text style={styles.location}> 
             • {posts.length} bài viết
           </Text>
         </View>
 
-        {/* === Các nút Action (ĐÃ SỬA) === */}
+        {/* === Các nút Action === */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
           style={[styles.button, styles.primaryButton]}
-          onPress={() => navigation.navigate('EditProfile')} // Thêm điều hướng
+          onPress={() => navigation.navigate('EditProfile')}
           >
             <Text style={styles.primaryButtonText}>Chỉnh sửa hồ sơ</Text>
           </TouchableOpacity>
@@ -284,10 +275,9 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* === Card Giới thiệu (ĐÃ SỬA) === */}
+        {/* === Card Giới thiệu === */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Giới thiệu</Text>
-          {/* Hiển thị BIO (từ about) */}
           <Text style={styles.aboutText}>{displayAbout}</Text> 
           {displayEmail && (
             <View style={styles.emailContainer}>
@@ -338,7 +328,7 @@ export default function ProfileScreen() {
         </View>
       </ScrollView>
 
-{/* --- 9. THÊM MODAL ĐỔI MẬT KHẨU --- */}
+{/* --- MODAL ĐỔI MẬT KHẨU --- */}
       <Modal
         visible={isModalVisible}
         transparent={true}
@@ -349,13 +339,11 @@ export default function ProfileScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
-          {/* Vùng mờ bên ngoài */}
           <TouchableOpacity 
             style={StyleSheet.absoluteFill} 
             onPress={closePasswordModal}
           />
           
-          {/* Nội dung Modal */}
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Đổi mật khẩu</Text>
             
@@ -383,7 +371,6 @@ export default function ProfileScreen() {
               />
             </View>
 
-            {/* Nút Bấm */}
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity 
                 style={[styles.modalButton, styles.modalButtonCancel]}
@@ -411,7 +398,6 @@ export default function ProfileScreen() {
   );
 }
 
-// --- HÀM STYLES ĐỘNG ---
 const getStyles = (colors) =>
   StyleSheet.create({
     safeArea: {

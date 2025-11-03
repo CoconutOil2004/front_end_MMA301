@@ -1,4 +1,3 @@
-// src/screens/EditProfileScreen.js
 import React, { useState, useContext } from 'react';
 import {
   View,
@@ -19,9 +18,8 @@ import { useTheme } from '../context/ThemeContext';
 import { AuthContext } from '../context/AuthContext';
 import { uploadToCloudinary } from '../utils/cloudinaryUpload';
 import { useNavigation } from '@react-navigation/native';
-import { DEFAULT_AVATAR } from '../utils/constants'; // Import avatar mặc định
+import { DEFAULT_AVATAR } from '../utils/constants';
 
-// Component con InputRow (thêm keyboardType)
 const InputRow = ({ label, value, onChangeText, multiline = false, placeholder, styles, keyboardType = 'default' }) => (
   <View style={styles.inputContainer}>
     <Text style={styles.label}>{label}</Text>
@@ -44,21 +42,17 @@ export default function EditProfileScreen() {
   const styles = getStyles(theme.colors);
   const navigation = useNavigation();
   
-  // Lấy đúng các hàm từ context
   const { user, updateProfile, updateAvatar, getDisplayAvatar } = useContext(AuthContext); 
 
-  // --- SỬA STATE ĐỂ KHỚP VỚI BACKEND ---
   const [name, setName] = useState(user?.name || '');
-  const [phone, setPhone] = useState(user?.phone || ''); // THÊM phone
-  const [bio, setBio] = useState(user?.bio || user?.about || ''); // SỬA about -> bio
-  // (Bỏ headline và location vì backend không nhận)
+  const [phone, setPhone] = useState(user?.phone || ''); 
+  const [bio, setBio] = useState(user?.bio || user?.about || ''); 
   
-  const [avatar, setAvatar] = useState(getDisplayAvatar()); // State avatar riêng
+  const [avatar, setAvatar] = useState(getDisplayAvatar()); 
   
-  const [isUploading, setIsUploading] = useState(false); // Loading khi upload ảnh
-  const [isSaving, setIsSaving] = useState(false); // Loading khi bấm Lưu
+  const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Hàm xử lý chọn ảnh
   const handleImagePick = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -74,7 +68,6 @@ export default function EditProfileScreen() {
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
-        // Tải ảnh lên Cloudinary VÀ cập nhật backend ngay khi chọn
         await handleUploadAvatar(result.assets[0].uri);
       }
     } catch (error) {
@@ -83,14 +76,12 @@ export default function EditProfileScreen() {
     }
   };
 
-  // --- SỬA HÀM TẢI AVATAR LÊN ---
   const handleUploadAvatar = async (uri) => {
     setIsUploading(true);
     try {
       const timestamp = Date.now();
       const userId = user?._id || user?.id || 'unknown';
       
-      // 1. Tải lên Cloudinary
       const response = await uploadToCloudinary(uri, {
         folder: 'avatars',
         publicId: `avatar_${userId}_${timestamp}`,
@@ -101,10 +92,8 @@ export default function EditProfileScreen() {
       
       const newAvatarUrl = `${response.secure_url}?t=${timestamp}`;
       
-      // 2. Gọi hàm updateAvatar từ context (để gọi API /update-avatar)
       await updateAvatar(newAvatarUrl); 
       
-      // 3. Cập nhật UI ngay lập tức
       setAvatar(newAvatarUrl); 
       Alert.alert('Thành công', 'Đã cập nhật ảnh đại diện.');
       
@@ -116,23 +105,19 @@ export default function EditProfileScreen() {
     }
   };
 
-  // --- SỬA HÀM LƯU (CHỈ LƯU TEXT) ---
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // 1. Chỉ chuẩn bị data text mà backend nhận
       const updatedData = {
         name,
         phone,
         bio,
-        // education: (bạn có thể thêm trường này nếu muốn)
       };
       
-      // 2. Gọi hàm updateProfile từ AuthContext (để gọi API /update)
       await updateProfile(updatedData);
       
       Alert.alert('Thành công', 'Thông tin cá nhân đã được cập nhật.');
-      navigation.goBack(); // Quay lại trang Profile
+      navigation.goBack(); 
       
     } catch (error) {
       console.error('Lỗi lưu thông tin:', error);
@@ -144,7 +129,6 @@ export default function EditProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Header (Nút Lưu chỉ gọi handleSave) */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={28} color={theme.colors.text} />
@@ -163,15 +147,14 @@ export default function EditProfileScreen() {
         style={styles.container}
         contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled" // Giúp input không bị mất focus
+        keyboardShouldPersistTaps="handled" 
       >
-        {/* Phần Avatar (Nút Đổi ảnh chỉ gọi handleImagePick) */}
         <View style={styles.avatarSection}>
           <Image source={{ uri: avatar || DEFAULT_AVATAR }} style={styles.profilePhoto} />
           <TouchableOpacity 
             style={styles.editAvatarButton} 
             onPress={handleImagePick} 
-            disabled={isUploading} // Vô hiệu hóa khi đang upload
+            disabled={isUploading} 
           >
             {isUploading ? (
               <ActivityIndicator size="small" color={theme.colors.primary} />
@@ -181,7 +164,6 @@ export default function EditProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* --- SỬA LẠI CÁC TRƯỜNG INPUT --- */}
         <View style={styles.card}>
           <InputRow
             label="Họ và tên"
@@ -191,29 +173,26 @@ export default function EditProfileScreen() {
             styles={styles}
           />
           <InputRow
-            label="Số điện thoại" // THÊM SĐT
+            label="Số điện thoại" 
             value={phone}
             onChangeText={setPhone}
             placeholder="Số điện thoại liên lạc"
             styles={styles}
-            keyboardType="phone-pad" // Bàn phím số
+            keyboardType="phone-pad" 
           />
-          {/* (Đã BỎ headline và location) */}
         </View>
 
-        {/* Card Giới thiệu (SỬA thành bio) */}
         <View style={styles.card}>
           <InputRow
-            label="Giới thiệu (Bio)" // SỬA TÊN
-            value={bio} // SỬA STATE
-            onChangeText={setBio} // SỬA STATE
+            label="Giới thiệu (Bio)" 
+            value={bio} 
+            onChangeText={setBio} 
             placeholder="Viết một chút về bản thân bạn..."
             multiline={true}
             styles={styles}
           />
         </View>
         
-        {/* Card Email (Hiển thị, không sửa) */}
          <View style={styles.card}>
             <Text style={styles.label}>Email (Không thể thay đổi)</Text>
             <Text style={[styles.input, styles.readOnlyInput]}>{user?.email || ''}</Text>
@@ -223,7 +202,6 @@ export default function EditProfileScreen() {
   );
 }
 
-// Hàm styles động (Cập nhật style cho input)
 const getStyles = (colors) =>
   StyleSheet.create({
     safeArea: {
