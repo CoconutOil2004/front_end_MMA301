@@ -43,12 +43,13 @@ export default function DrawerContent({ isOpen, onClose }) {
   const displayAvatar = avatarUrl || user?.avatar || DEFAULT_AVATAR;
   const displayName = user?.name || "Người dùng";
   const displayJobTitle =
-    user?.headline || user?.jobTitle || "Software Engineer";
-  const displayLocation = user?.location || "Hanoi, Vietnam";
-  const displayCompany = user?.company || "FPT Software";
+    user?.headline || user?.phone || "Chưa cập nhật SĐT";
+  const displayLocation = user?.email || "Hanoi, Vietnam";
+  const displayCompany = user?.bio || "Chưa cập nhật giới thiệu";
   const displayCompanyInitial = displayCompany.charAt(0).toUpperCase();
 
-  const menuItems = [{ icon: "bookmark-outline", label: "Saved posts" }];
+  // const menuItems = [{ icon: "bookmark-outline", label: "Saved posts" }];
+  const menuItems = [];
 
   return (
     <View style={styles.container}>
@@ -93,12 +94,12 @@ export default function DrawerContent({ isOpen, onClose }) {
           </View>
         </View>
 
-        <View style={styles.profileViews}>
+        {/* <View style={styles.profileViews}>
           <Text style={styles.viewsText}>
             <Text style={styles.viewsNumber}>{user?.profileViews || 13}</Text>{" "}
             profile viewers
           </Text>
-        </View>
+        </View> */}
 
         <View style={styles.menuSection}>
           {menuItems.map((item, index) => (
