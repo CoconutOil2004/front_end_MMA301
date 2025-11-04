@@ -7,18 +7,27 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  Modal,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  TextInput,
+  Platform,
+  Linking,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import { AuthContext } from "../context/AuthContext";
 import { DEFAULT_AVATAR } from "../utils/constants";
 import { useTheme } from "../context/ThemeContext";
 import { likePost } from "../service/posts";
 import { createReport } from "../service/reports";
+import { createOrGetConversation } from "../service";
 
 export default function PostCard({ post, onPostUpdate }) {
   const { user, avatarUrl } = useContext(AuthContext);
   const { theme } = useTheme();
   const styles = getStyles(theme.colors);
+  const navigation = useNavigation();
   
   // State để quản lý like
   const [isLiked, setIsLiked] = useState(
@@ -33,10 +42,8 @@ export default function PostCard({ post, onPostUpdate }) {
   const [showReportModal, setShowReportModal] = useState(false);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [reportReason, setReportReason] = useState("");
+  const [isOpeningChat, setIsOpeningChat] = useState(false);
   
-  // State cho Send button
-  const [startingChat, setStartingChat] = useState(false);
-
   const postUserId = post.userId?._id || post.userId?.id || post.userId;
   const currentUserId = user?._id || user?.id;
   const defaultAvatarUri = DEFAULT_AVATAR || "https://via.placeholder.com/48";
@@ -67,28 +74,41 @@ export default function PostCard({ post, onPostUpdate }) {
     [avatar, contactPhone, name, postUserId]
   );
 
-  const handleSendPress = async () => {
-    if (startingChat) return;
+  const handleLike = async () => {
+    if (isLiking) return;
 
+    const previousLiked = isLiked;
+    const previousCount = likesCount;
+
+    setIsLiking(true);
+
+    try {
       const postId = post._id || post.id;
       const response = await likePost(postId);
-      
-      if (response.success && response.data) {
-        setLikesCount(response.data.likes?.length || newLikesCount);
-        setIsLiked(response.data.likes?.some(like => 
-          (like._id || like.id || like) === currentUserId
-        ) || newIsLiked);
-      }
+
+      const nextLiked =
+        typeof response?.liked === "boolean" ? response.liked : !previousLiked;
+      const nextCount =
+        typeof response?.likeCount === "number"
+          ? response.likeCount
+          : previousLiked
+          ? Math.max(previousCount - 1, 0)
+          : previousCount + 1;
+
+      setIsLiked(nextLiked);
+      setLikesCount(nextCount);
 
       if (onPostUpdate) {
-        onPostUpdate(response.data);
+        onPostUpdate(response);
       }
-      
     } catch (error) {
       console.error("Error liking post:", error);
-      setIsLiked(!isLiked);
-      setLikesCount(likesCount);
-      Alert.alert("Lỗi", error.response?.data?.message || "Không thể thực hiện. Vui lòng thử lại!");
+      setIsLiked(previousLiked);
+      setLikesCount(previousCount);
+      Alert.alert(
+        "Lỗi",
+        error.response?.data?.message || "Không thể thực hiện. Vui lòng thử lại!"
+      );
     } finally {
       setIsLiking(false);
     }
@@ -118,51 +138,26 @@ export default function PostCard({ post, onPostUpdate }) {
 
     try {
       setIsSubmittingReport(true);
-      
+
       const reportData = {
         reporterId: currentUserId,
         postId: post._id || post.id,
         reason: reportReason.trim(),
       };
 
-      const receiverFromConversation = conversation.participants?.find(
-        (participant) => {
-          const participantId = participant?._id || participant;
-          return participantId && participantId !== currentUserId;
-        }
+      await createReport(reportData);
+
+      Alert.alert("Thành công", "Đã gửi báo cáo cho bài viết.");
+      setShowReportModal(false);
+      setReportReason("");
+    } catch (error) {
+      console.error("Error reporting post:", error);
+      Alert.alert(
+        "Lỗi",
+        error.response?.data?.message || "Không thể gửi báo cáo. Vui lòng thử lại!"
       );
     } finally {
       setIsSubmittingReport(false);
-    }
-  };
-
-      const receiver = receiverFromConversation
-        ? {
-            _id: receiverFromConversation._id || receiverFromConversation,
-            name: receiverFromConversation.name || postOwner.name,
-            avatar: receiverFromConversation.avatar || postOwner.avatar,
-            phone: receiverFromConversation.phone || postOwner.phone,
-          }
-        : (typeof post.userId === "object" && {
-            _id: post.userId._id || post.userId.id,
-            name: post.userId.name || postOwner.name,
-            avatar: post.userId.avatar || postOwner.avatar,
-            phone: post.userId.phone || postOwner.phone,
-          }) || postOwner;
-
-      navigation.navigate("ChatDetail", {
-        conversationId: conversation._id,
-        receiver,
-        originPost: {
-          id: post.id || post._id || conversation._id,
-          title,
-        },
-      });
-    } catch (error) {
-      console.error("Error starting chat:", error);
-      Alert.alert("Lỗi", "Không thể mở chat. Vui lòng thử lại!");
-    } finally {
-      setStartingChat(false);
     }
   };
 
@@ -185,6 +180,51 @@ export default function PostCard({ post, onPostUpdate }) {
       );
     }
     return null;
+  };
+
+  const handleSendPress = async () => {
+    if (isOpeningChat || !currentUserId || !postUserId) return;
+
+    if (isCurrentUserPost) {
+      Alert.alert("Thông báo", "Bạn không thể nhắn tin với chính mình.");
+      return;
+    }
+
+    try {
+      setIsOpeningChat(true);
+
+      const conversation = await createOrGetConversation({
+        senderId: currentUserId,
+        receiverId: postUserId,
+      });
+
+      const conversationId = conversation?._id;
+
+      if (!conversationId) {
+        throw new Error("Conversation not found");
+      }
+
+      const receiver = {
+        _id: postOwner._id,
+        name: postOwner.name,
+        avatar: postOwner.avatar,
+        phone: postOwner.phone,
+      };
+
+      navigation.navigate("ChatDetail", {
+        conversationId,
+        receiver,
+        originPost: {
+          id: post._id || post.id,
+          title,
+        },
+      });
+    } catch (error) {
+      console.error("Error opening chat:", error);
+      Alert.alert("Lỗi", "Không thể mở khung chat. Vui lòng thử lại!");
+    } finally {
+      setIsOpeningChat(false);
+    }
   };
 
   return (
@@ -273,7 +313,7 @@ export default function PostCard({ post, onPostUpdate }) {
 
       {/* Post Footer */}
       <View style={styles.postFooter}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.footerButton}
           onPress={handleLike}
           disabled={isLiking}
@@ -293,7 +333,11 @@ export default function PostCard({ post, onPostUpdate }) {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerButton}>
+        <TouchableOpacity
+          style={styles.footerButton}
+          onPress={handleSendPress}
+          disabled={isOpeningChat}
+        >
           <Ionicons
             name="paper-plane-outline"
             size={20}
